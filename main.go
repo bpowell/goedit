@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"os"
 	"syscall"
-	"unicode"
-	"unicode/utf8"
 	"unsafe"
 )
 
@@ -47,25 +45,37 @@ func resetMode() {
 	}
 }
 
-func main() {
-	defer resetMode()
+func readKey() byte {
 	var buf [1]byte
-	rawMode()
 
 	for {
-		if _, err := reader.Read(buf[:]); err != nil {
+		n, err := reader.Read(buf[:])
+		if err != nil {
 			panic(err)
 		}
 
-		r, _ := utf8.DecodeRune(buf[:])
-		if unicode.IsControl(r) {
-			fmt.Printf("%d\r\n", buf[0])
-		} else {
-			fmt.Printf("%d %c\r\n", buf[0], buf[0])
-		}
-
-		if buf[0] == 'q' {
+		if n == 1 {
 			break
 		}
+	}
+
+	return buf[0]
+}
+
+func processKeyPress() {
+	key := readKey()
+
+	switch key {
+	case ('q' & 0x1f):
+		resetMode()
+		os.Exit(0)
+	}
+}
+
+func main() {
+	rawMode()
+
+	for {
+		processKeyPress()
 	}
 }
