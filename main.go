@@ -31,6 +31,7 @@ type editor struct {
 	reader   terminal
 	orignial syscall.Termios
 	winsize
+	contents *bytes.Buffer
 }
 
 var goedit editor
@@ -46,6 +47,18 @@ func init() {
 
 	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&goedit.winsize))); err != 0 {
 		panic(err)
+	}
+
+	goedit.contents = bytes.NewBufferString("")
+}
+
+func drawRows() {
+	for x := 0; x < int(goedit.height); x++ {
+		goedit.contents.WriteString("~")
+		goedit.contents.WriteString("\x1b[K")
+		if x < int(goedit.height)-1 {
+			goedit.contents.WriteString("\r\n")
+		}
 	}
 }
 
@@ -89,8 +102,15 @@ func readKey() byte {
 }
 
 func clearScreen() {
-	goedit.reader.Write("\x1b[2J")
-	goedit.reader.Write("\x1b[H")
+	goedit.contents.Reset()
+	goedit.contents.WriteString("\x1b[?25l")
+	goedit.contents.WriteString("\x1b[H")
+	drawRows()
+	goedit.contents.WriteString("\x1b[H")
+	goedit.contents.WriteString("\x1b[?25h")
+
+	goedit.reader.Write(goedit.contents.String())
+	goedit.contents.Reset()
 }
 
 func processKeyPress() {
