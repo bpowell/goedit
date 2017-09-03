@@ -7,6 +7,13 @@ import (
 	"unsafe"
 )
 
+type winsize struct {
+	height uint16
+	width  uint16
+	x      uint16
+	y      uint16
+}
+
 type terminal int
 
 func (t terminal) Read(buf []byte) (int, error) {
@@ -20,19 +27,30 @@ func (t terminal) Write(s string) {
 	}
 }
 
-var orignial syscall.Termios
-var reader terminal
+type editor struct {
+	reader   terminal
+	orignial syscall.Termios
+	winsize
+}
+
+var goedit editor
 
 func init() {
-	reader = terminal(syscall.Stdin)
-	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(reader), syscall.TCGETS, uintptr(unsafe.Pointer(&orignial)), 0, 0, 0)
+	goedit = editor{}
+
+	goedit.reader = terminal(syscall.Stdin)
+	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TCGETS, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
 	if err != 0 {
+		panic(err)
+	}
+
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&goedit.winsize))); err != 0 {
 		panic(err)
 	}
 }
 
 func rawMode() {
-	argp := orignial
+	argp := goedit.orignial
 	argp.Iflag &^= syscall.BRKINT | syscall.ICRNL | syscall.INPCK | syscall.ISTRIP | syscall.IXON
 	argp.Oflag &^= syscall.OPOST
 	argp.Cflag |= syscall.CS8
@@ -40,14 +58,14 @@ func rawMode() {
 	argp.Cc[syscall.VMIN] = 0
 	argp.Cc[syscall.VTIME] = 1
 
-	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(reader), 0x5404, uintptr(unsafe.Pointer(&argp)), 0, 0, 0)
+	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), 0x5404, uintptr(unsafe.Pointer(&argp)), 0, 0, 0)
 	if err != 0 {
 		panic(err)
 	}
 }
 
 func resetMode() {
-	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(reader), 0x5404, uintptr(unsafe.Pointer(&orignial)), 0, 0, 0)
+	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), 0x5404, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
 	if err != 0 {
 		panic(err)
 	}
@@ -57,7 +75,7 @@ func readKey() byte {
 	var buf [1]byte
 
 	for {
-		n, err := reader.Read(buf[:])
+		n, err := goedit.reader.Read(buf[:])
 		if err != nil {
 			panic(err)
 		}
@@ -71,8 +89,8 @@ func readKey() byte {
 }
 
 func clearScreen() {
-	reader.Write("\x1b[2J")
-	reader.Write("\x1b[H")
+	goedit.reader.Write("\x1b[2J")
+	goedit.reader.Write("\x1b[H")
 }
 
 func processKeyPress() {
