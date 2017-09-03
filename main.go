@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"syscall"
 	"unsafe"
@@ -10,6 +11,13 @@ type terminal int
 
 func (t terminal) Read(buf []byte) (int, error) {
 	return syscall.Read(int(t), buf)
+}
+
+func (t terminal) Write(s string) {
+	b := bytes.NewBufferString(s)
+	if _, err := syscall.Write(int(t), b.Bytes()); err != nil {
+		panic(err)
+	}
 }
 
 var orignial syscall.Termios
@@ -62,6 +70,11 @@ func readKey() byte {
 	return buf[0]
 }
 
+func clearScreen() {
+	reader.Write("\x1b[2J")
+	reader.Write("\x1b[H")
+}
+
 func processKeyPress() {
 	key := readKey()
 
@@ -76,6 +89,7 @@ func main() {
 	rawMode()
 
 	for {
+		clearScreen()
 		processKeyPress()
 	}
 }
