@@ -8,6 +8,18 @@ import (
 	"unsafe"
 )
 
+const (
+	CURSOR_UP    = 1000
+	CURSOR_DOWN  = 1001
+	CURSOR_LEFT  = 1002
+	CURSOR_RIGHT = 1003
+)
+
+const (
+	INSERT_MODE = 1
+	CMD_MODE    = 2
+)
+
 type winsize struct {
 	height uint16
 	width  uint16
@@ -38,12 +50,14 @@ type editor struct {
 	winsize
 	contents *bytes.Buffer
 	cursor   cursor
+	mode     int
 }
 
 var goedit editor
 
 func init() {
 	goedit = editor{}
+	goedit.mode = CMD_MODE
 
 	goedit.reader = terminal(syscall.Stdin)
 	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TCGETS, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
@@ -90,7 +104,7 @@ func resetMode() {
 	}
 }
 
-func readKey() byte {
+func readKey() rune {
 	var buf [1]byte
 
 	for {
@@ -104,24 +118,51 @@ func readKey() byte {
 		}
 	}
 
-	return buf[0]
+	if buf[0] == '\x1b' {
+		var seq [2]byte
+		n, err := goedit.reader.Read(seq[:])
+		if err != nil {
+			panic(err)
+		}
+
+		if n != 2 {
+			return '\x1b'
+		}
+
+		if seq[0] == '[' {
+			switch seq[1] {
+			case 'A':
+				return CURSOR_UP
+			case 'B':
+				return CURSOR_DOWN
+			case 'C':
+				return CURSOR_RIGHT
+			case 'D':
+				return CURSOR_LEFT
+			}
+		}
+
+		return '\x1b'
+	}
+
+	return bytes.Runes(buf[:])[0]
 }
 
-func (e *editor) moveCursor(key byte) {
+func (e *editor) moveCursor(key rune) {
 	switch key {
-	case 'j':
+	case CURSOR_DOWN:
 		if e.height != e.cursor.y {
 			e.cursor.y++
 		}
-	case 'k':
+	case CURSOR_UP:
 		if e.cursor.y != 0 {
 			e.cursor.y--
 		}
-	case 'h':
+	case CURSOR_LEFT:
 		if e.cursor.x != 0 {
 			e.cursor.x--
 		}
-	case 'l':
+	case CURSOR_RIGHT:
 		if e.width != e.cursor.x {
 			e.cursor.x++
 		}
@@ -147,8 +188,30 @@ func processKeyPress() {
 	case ('q' & 0x1f):
 		resetMode()
 		os.Exit(0)
-	case 'j', 'k', 'h', 'l':
+	case CURSOR_DOWN, CURSOR_UP, CURSOR_LEFT, CURSOR_RIGHT:
 		goedit.moveCursor(key)
+	case 'h':
+		if goedit.mode == CMD_MODE {
+			goedit.moveCursor(CURSOR_LEFT)
+		}
+	case 'j':
+		if goedit.mode == CMD_MODE {
+			goedit.moveCursor(CURSOR_DOWN)
+		}
+	case 'k':
+		if goedit.mode == CMD_MODE {
+			goedit.moveCursor(CURSOR_UP)
+		}
+	case 'l':
+		if goedit.mode == CMD_MODE {
+			goedit.moveCursor(CURSOR_RIGHT)
+		}
+	case 'i':
+		if goedit.mode == CMD_MODE {
+			goedit.mode = INSERT_MODE
+		}
+	case '\x1b':
+		goedit.mode = CMD_MODE
 	}
 }
 
