@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"syscall"
 	"unsafe"
@@ -27,11 +28,16 @@ func (t terminal) Write(s string) {
 	}
 }
 
+type cursor struct {
+	x, y uint16
+}
+
 type editor struct {
 	reader   terminal
 	orignial syscall.Termios
 	winsize
 	contents *bytes.Buffer
+	cursor   cursor
 }
 
 var goedit editor
@@ -101,12 +107,33 @@ func readKey() byte {
 	return buf[0]
 }
 
+func (e *editor) moveCursor(key byte) {
+	switch key {
+	case 'j':
+		if e.height != e.cursor.y {
+			e.cursor.y++
+		}
+	case 'k':
+		if e.cursor.y != 0 {
+			e.cursor.y--
+		}
+	case 'h':
+		if e.cursor.x != 0 {
+			e.cursor.x--
+		}
+	case 'l':
+		if e.width != e.cursor.x {
+			e.cursor.x++
+		}
+	}
+}
+
 func clearScreen() {
 	goedit.contents.Reset()
 	goedit.contents.WriteString("\x1b[?25l")
 	goedit.contents.WriteString("\x1b[H")
 	drawRows()
-	goedit.contents.WriteString("\x1b[H")
+	goedit.contents.WriteString(fmt.Sprintf("\x1b[%d;%dH", int(goedit.cursor.y)+1, int(goedit.cursor.x)+1))
 	goedit.contents.WriteString("\x1b[?25h")
 
 	goedit.reader.Write(goedit.contents.String())
@@ -120,6 +147,8 @@ func processKeyPress() {
 	case ('q' & 0x1f):
 		resetMode()
 		os.Exit(0)
+	case 'j', 'k', 'h', 'l':
+		goedit.moveCursor(key)
 	}
 }
 
