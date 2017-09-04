@@ -293,7 +293,9 @@ func processKeyPress() {
 
 func main() {
 	rawMode()
-	openFile("README.md")
+	if len(os.Args) == 2 {
+		openFile(os.Args[1])
+	}
 
 	for {
 		clearScreen()
