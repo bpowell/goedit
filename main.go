@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -53,9 +54,11 @@ type editor struct {
 	reader   terminal
 	orignial syscall.Termios
 	winsize
-	editorUI *bytes.Buffer
-	cursor   cursor
-	mode     int
+	editorUI     *bytes.Buffer
+	cursor       cursor
+	mode         int
+	fileContents []string
+	filename     string
 }
 
 var goedit editor
@@ -77,9 +80,27 @@ func init() {
 	goedit.editorUI = bytes.NewBufferString("")
 }
 
+func openFile(filename string) {
+	file, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		goedit.fileContents = append(goedit.fileContents, scanner.Text())
+	}
+}
+
 func drawRows() {
 	for x := 0; x < int(goedit.height); x++ {
-		goedit.editorUI.WriteString("~")
+		if x >= len(goedit.fileContents) {
+			goedit.editorUI.WriteString("~")
+		} else {
+			goedit.editorUI.WriteString(goedit.fileContents[x])
+		}
+
 		goedit.editorUI.WriteString("\x1b[K")
 		if x < int(goedit.height)-1 {
 			goedit.editorUI.WriteString("\r\n")
@@ -272,6 +293,7 @@ func processKeyPress() {
 
 func main() {
 	rawMode()
+	openFile("README.md")
 
 	for {
 		clearScreen()
