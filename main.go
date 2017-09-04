@@ -13,6 +13,11 @@ const (
 	CURSOR_DOWN  = 1001
 	CURSOR_LEFT  = 1002
 	CURSOR_RIGHT = 1003
+	PAGE_UP      = 1004
+	PAGE_DOWN    = 1005
+	HOME_KEY     = 1006
+	END_KEY      = 1007
+	DEL_KEY      = 1008
 )
 
 const (
@@ -130,15 +135,53 @@ func readKey() rune {
 		}
 
 		if seq[0] == '[' {
+			if seq[1] >= '0' && seq[1] <= '9' {
+				var tilde [1]byte
+				n, err := goedit.reader.Read(tilde[:])
+				if err != nil {
+					panic(err)
+				}
+
+				if n != 1 {
+					return '\x1b'
+				}
+
+				if tilde[0] == '~' {
+					switch seq[1] {
+					case '1', '7':
+						return HOME_KEY
+					case '3':
+						return DEL_KEY
+					case '4', '8':
+						return END_KEY
+					case '5':
+						return PAGE_UP
+					case '6':
+						return PAGE_DOWN
+					}
+				}
+			} else {
+				switch seq[1] {
+				case 'A':
+					return CURSOR_UP
+				case 'B':
+					return CURSOR_DOWN
+				case 'C':
+					return CURSOR_RIGHT
+				case 'D':
+					return CURSOR_LEFT
+				case 'H':
+					return HOME_KEY
+				case 'F':
+					return END_KEY
+				}
+			}
+		} else if seq[0] == 'O' {
 			switch seq[1] {
-			case 'A':
-				return CURSOR_UP
-			case 'B':
-				return CURSOR_DOWN
-			case 'C':
-				return CURSOR_RIGHT
-			case 'D':
-				return CURSOR_LEFT
+			case 'H':
+				return HOME_KEY
+			case 'F':
+				return END_KEY
 			}
 		}
 
@@ -212,6 +255,18 @@ func processKeyPress() {
 		}
 	case '\x1b':
 		goedit.mode = CMD_MODE
+	case PAGE_UP:
+		for x := 0; x < int(goedit.height); x++ {
+			goedit.moveCursor(CURSOR_UP)
+		}
+	case PAGE_DOWN:
+		for x := 0; x < int(goedit.height); x++ {
+			goedit.moveCursor(CURSOR_DOWN)
+		}
+	case HOME_KEY:
+		goedit.cursor.x = 0
+	case END_KEY:
+		goedit.cursor.x = goedit.width - 1
 	}
 }
 
