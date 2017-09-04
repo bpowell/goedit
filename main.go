@@ -53,7 +53,7 @@ type editor struct {
 	reader   terminal
 	orignial syscall.Termios
 	winsize
-	contents *bytes.Buffer
+	editorUI *bytes.Buffer
 	cursor   cursor
 	mode     int
 }
@@ -74,15 +74,15 @@ func init() {
 		panic(err)
 	}
 
-	goedit.contents = bytes.NewBufferString("")
+	goedit.editorUI = bytes.NewBufferString("")
 }
 
 func drawRows() {
 	for x := 0; x < int(goedit.height); x++ {
-		goedit.contents.WriteString("~")
-		goedit.contents.WriteString("\x1b[K")
+		goedit.editorUI.WriteString("~")
+		goedit.editorUI.WriteString("\x1b[K")
 		if x < int(goedit.height)-1 {
-			goedit.contents.WriteString("\r\n")
+			goedit.editorUI.WriteString("\r\n")
 		}
 	}
 }
@@ -213,15 +213,15 @@ func (e *editor) moveCursor(key rune) {
 }
 
 func clearScreen() {
-	goedit.contents.Reset()
-	goedit.contents.WriteString("\x1b[?25l")
-	goedit.contents.WriteString("\x1b[H")
+	goedit.editorUI.Reset()
+	goedit.editorUI.WriteString("\x1b[?25l")
+	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
-	goedit.contents.WriteString(fmt.Sprintf("\x1b[%d;%dH", int(goedit.cursor.y)+1, int(goedit.cursor.x)+1))
-	goedit.contents.WriteString("\x1b[?25h")
+	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", int(goedit.cursor.y)+1, int(goedit.cursor.x)+1))
+	goedit.editorUI.WriteString("\x1b[?25h")
 
-	goedit.reader.Write(goedit.contents.String())
-	goedit.contents.Reset()
+	goedit.reader.Write(goedit.editorUI.String())
+	goedit.editorUI.Reset()
 }
 
 func processKeyPress() {
