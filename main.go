@@ -61,6 +61,7 @@ type editor struct {
 	fileContents []string
 	filename     string
 	fileOffSet   int
+	numOfRows    int
 }
 
 var goedit editor
@@ -96,12 +97,14 @@ func openFile(filename string) {
 	for scanner.Scan() {
 		goedit.fileContents = append(goedit.fileContents, scanner.Text())
 	}
+
+	goedit.numOfRows = len(goedit.fileContents)
 }
 
 func drawRows() {
 	for x := 0; x < goedit.height; x++ {
 		filerow := x + goedit.fileOffSet
-		if filerow >= len(goedit.fileContents) {
+		if filerow >= goedit.numOfRows {
 			goedit.editorUI.WriteString("~")
 		} else {
 			goedit.editorUI.WriteString(goedit.fileContents[filerow])
@@ -119,8 +122,8 @@ func scroll() {
 		goedit.fileOffSet = goedit.cursor.y
 	}
 
-	if goedit.cursor.y >= goedit.fileOffSet+len(goedit.fileContents) {
-		goedit.fileOffSet = goedit.cursor.y - len(goedit.fileContents) + 1
+	if goedit.cursor.y >= goedit.fileOffSet+goedit.numOfRows {
+		goedit.fileOffSet = goedit.cursor.y - goedit.numOfRows + 1
 	}
 }
 
@@ -231,7 +234,7 @@ func readKey() rune {
 func (e *editor) moveCursor(key rune) {
 	switch key {
 	case CURSOR_DOWN:
-		if e.cursor.y < len(e.fileContents) {
+		if e.cursor.y < goedit.numOfRows {
 			e.cursor.y++
 		}
 	case CURSOR_UP:
@@ -255,7 +258,7 @@ func clearScreen() {
 	goedit.editorUI.WriteString("\x1b[?25l")
 	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
-	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", goedit.cursor.y-goedit.fileOffSet+1, goedit.cursor.x+1))
+	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", goedit.cursor.y+1, goedit.cursor.x+1))
 	goedit.editorUI.WriteString("\x1b[?25h")
 
 	goedit.reader.Write(goedit.editorUI.String())
