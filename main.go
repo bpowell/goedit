@@ -47,19 +47,20 @@ func (t terminal) Write(s string) {
 }
 
 type cursor struct {
-	x, y uint16
+	x, y int
 }
 
 type editor struct {
-	reader   terminal
-	orignial syscall.Termios
-	winsize
+	reader       terminal
+	orignial     syscall.Termios
+	height       int
+	width        int
 	editorUI     *bytes.Buffer
 	cursor       cursor
 	mode         int
 	fileContents []string
 	filename     string
-	fileOffSet   uint16
+	fileOffSet   int
 }
 
 var goedit editor
@@ -74,9 +75,12 @@ func init() {
 		panic(err)
 	}
 
-	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&goedit.winsize))); err != 0 {
+	winsize := winsize{}
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&winsize))); err != 0 {
 		panic(err)
 	}
+	goedit.height = int(winsize.height)
+	goedit.width = int(winsize.width)
 
 	goedit.editorUI = bytes.NewBufferString("")
 }
@@ -95,8 +99,8 @@ func openFile(filename string) {
 }
 
 func drawRows() {
-	for x := 0; x < int(goedit.height); x++ {
-		filerow := x + int(goedit.fileOffSet)
+	for x := 0; x < goedit.height; x++ {
+		filerow := x + goedit.fileOffSet
 		if filerow >= len(goedit.fileContents) {
 			goedit.editorUI.WriteString("~")
 		} else {
@@ -104,7 +108,7 @@ func drawRows() {
 		}
 
 		goedit.editorUI.WriteString("\x1b[K")
-		if x < int(goedit.height)-1 {
+		if x < goedit.height-1 {
 			goedit.editorUI.WriteString("\r\n")
 		}
 	}
@@ -115,8 +119,8 @@ func scroll() {
 		goedit.fileOffSet = goedit.cursor.y
 	}
 
-	if goedit.cursor.y >= goedit.fileOffSet+uint16(len(goedit.fileContents)) {
-		goedit.fileOffSet = goedit.cursor.y - uint16(len(goedit.fileContents)) + 1
+	if goedit.cursor.y >= goedit.fileOffSet+len(goedit.fileContents) {
+		goedit.fileOffSet = goedit.cursor.y - len(goedit.fileContents) + 1
 	}
 }
 
@@ -227,7 +231,7 @@ func readKey() rune {
 func (e *editor) moveCursor(key rune) {
 	switch key {
 	case CURSOR_DOWN:
-		if e.cursor.y < uint16(len(e.fileContents)) {
+		if e.cursor.y < len(e.fileContents) {
 			e.cursor.y++
 		}
 	case CURSOR_UP:
@@ -239,7 +243,7 @@ func (e *editor) moveCursor(key rune) {
 			e.cursor.x--
 		}
 	case CURSOR_RIGHT:
-		if e.width != e.cursor.x-uint16(1) {
+		if e.width != e.cursor.x-1 {
 			e.cursor.x++
 		}
 	}
@@ -251,7 +255,7 @@ func clearScreen() {
 	goedit.editorUI.WriteString("\x1b[?25l")
 	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
-	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", int(goedit.cursor.y-goedit.fileOffSet)+1, int(goedit.cursor.x)+1))
+	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", goedit.cursor.y-goedit.fileOffSet+1, goedit.cursor.x+1))
 	goedit.editorUI.WriteString("\x1b[?25h")
 
 	goedit.reader.Write(goedit.editorUI.String())
@@ -290,11 +294,11 @@ func processKeyPress() {
 	case '\x1b':
 		goedit.mode = CMD_MODE
 	case PAGE_UP:
-		for x := 0; x < int(goedit.height); x++ {
+		for x := 0; x < goedit.height; x++ {
 			goedit.moveCursor(CURSOR_UP)
 		}
 	case PAGE_DOWN:
-		for x := 0; x < int(goedit.height); x++ {
+		for x := 0; x < goedit.height; x++ {
 			goedit.moveCursor(CURSOR_DOWN)
 		}
 	case HOME_KEY:
