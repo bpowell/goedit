@@ -59,6 +59,7 @@ type editor struct {
 	mode         int
 	fileContents []string
 	filename     string
+	fileOffSet   uint16
 }
 
 var goedit editor
@@ -95,16 +96,27 @@ func openFile(filename string) {
 
 func drawRows() {
 	for x := 0; x < int(goedit.height); x++ {
-		if x >= len(goedit.fileContents) {
+		filerow := x + int(goedit.fileOffSet)
+		if filerow >= len(goedit.fileContents) {
 			goedit.editorUI.WriteString("~")
 		} else {
-			goedit.editorUI.WriteString(goedit.fileContents[x])
+			goedit.editorUI.WriteString(goedit.fileContents[filerow])
 		}
 
 		goedit.editorUI.WriteString("\x1b[K")
 		if x < int(goedit.height)-1 {
 			goedit.editorUI.WriteString("\r\n")
 		}
+	}
+}
+
+func scroll() {
+	if goedit.cursor.y < goedit.fileOffSet {
+		goedit.fileOffSet = goedit.cursor.y
+	}
+
+	if goedit.cursor.y >= goedit.fileOffSet+uint16(len(goedit.fileContents)) {
+		goedit.fileOffSet = goedit.cursor.y - uint16(len(goedit.fileContents)) + 1
 	}
 }
 
@@ -215,7 +227,7 @@ func readKey() rune {
 func (e *editor) moveCursor(key rune) {
 	switch key {
 	case CURSOR_DOWN:
-		if e.height != e.cursor.y {
+		if e.cursor.y < uint16(len(e.fileContents)) {
 			e.cursor.y++
 		}
 	case CURSOR_UP:
@@ -227,18 +239,19 @@ func (e *editor) moveCursor(key rune) {
 			e.cursor.x--
 		}
 	case CURSOR_RIGHT:
-		if e.width != e.cursor.x {
+		if e.width != e.cursor.x-uint16(1) {
 			e.cursor.x++
 		}
 	}
 }
 
 func clearScreen() {
+	scroll()
 	goedit.editorUI.Reset()
 	goedit.editorUI.WriteString("\x1b[?25l")
 	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
-	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", int(goedit.cursor.y)+1, int(goedit.cursor.x)+1))
+	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", int(goedit.cursor.y-goedit.fileOffSet)+1, int(goedit.cursor.x)+1))
 	goedit.editorUI.WriteString("\x1b[?25h")
 
 	goedit.reader.Write(goedit.editorUI.String())
