@@ -274,9 +274,23 @@ func (e *editor) moveCursor(key rune) {
 	case CURSOR_LEFT:
 		if e.cursor.x != 0 {
 			e.cursor.x--
+		} else if e.cursor.y > 0 {
+			e.cursor.y--
+			e.cursor.x = len(e.fileContents[e.cursor.y])
 		}
 	case CURSOR_RIGHT:
-		e.cursor.x++
+		if e.cursor.y < e.numOfRows && e.cursor.x < len(e.fileContents[e.cursor.y]) {
+			e.cursor.x++
+		} else if e.cursor.y < e.numOfRows && e.cursor.x == len(e.fileContents[e.cursor.y]) {
+			e.cursor.y++
+			e.cursor.x = 0
+		}
+	}
+
+	if e.cursor.y < e.numOfRows {
+		if e.cursor.x > len(e.fileContents[e.cursor.y]) {
+			e.cursor.x = len(e.fileContents[e.cursor.y])
+		}
 	}
 }
 
