@@ -136,6 +136,14 @@ func scroll() {
 	if goedit.cursor.y >= goedit.rowOffSet+goedit.height {
 		goedit.rowOffSet = goedit.cursor.y - goedit.height + 1
 	}
+
+	if goedit.cursor.x < goedit.colOffSet {
+		goedit.colOffSet = goedit.cursor.x
+	}
+
+	if goedit.cursor.x >= goedit.colOffSet+goedit.width {
+		goedit.colOffSet = goedit.cursor.x - goedit.width + 1
+	}
 }
 
 func rawMode() {
@@ -257,9 +265,7 @@ func (e *editor) moveCursor(key rune) {
 			e.cursor.x--
 		}
 	case CURSOR_RIGHT:
-		if e.width != e.cursor.x-1 {
-			e.cursor.x++
-		}
+		e.cursor.x++
 	}
 }
 
@@ -269,7 +275,7 @@ func clearScreen() {
 	goedit.editorUI.WriteString("\x1b[?25l")
 	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
-	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", goedit.cursor.y+1, goedit.cursor.x+1))
+	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.cursor.x-goedit.colOffSet)+1))
 	goedit.editorUI.WriteString("\x1b[?25h")
 
 	goedit.reader.Write(goedit.editorUI.String())
