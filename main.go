@@ -46,7 +46,7 @@ func (t terminal) Read(buf []byte) (int, error) {
 func (t terminal) Write(s string) {
 	b := bytes.NewBufferString(s)
 	if _, err := syscall.Write(int(t), b.Bytes()); err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 }
 
@@ -74,7 +74,7 @@ var goedit editor
 func init() {
 	errorlog, errr := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if errr != nil {
-		panic(errr)
+		logger.Fatal(errr)
 	}
 
 	logger = log.New(errorlog, "goedit: ", log.Lshortfile|log.LstdFlags)
@@ -85,12 +85,12 @@ func init() {
 	goedit.reader = terminal(syscall.Stdin)
 	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TCGETS, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
 	if err != 0 {
-		panic(err)
+		logger.Fatal(err)
 	}
 
 	winsize := winsize{}
 	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&winsize))); err != 0 {
-		panic(err)
+		logger.Fatal(err)
 	}
 	goedit.height = int(winsize.height)
 	goedit.width = int(winsize.width)
@@ -101,7 +101,7 @@ func init() {
 func openFile(filename string) {
 	file, err := os.Open(filename)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 	defer file.Close()
 
@@ -168,14 +168,14 @@ func rawMode() {
 
 	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), 0x5404, uintptr(unsafe.Pointer(&argp)), 0, 0, 0)
 	if err != 0 {
-		panic(err)
+		logger.Fatal(err)
 	}
 }
 
 func resetMode() {
 	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), 0x5404, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
 	if err != 0 {
-		panic(err)
+		logger.Fatal(err)
 	}
 }
 
@@ -185,7 +185,7 @@ func readKey() rune {
 	for {
 		n, err := goedit.reader.Read(buf[:])
 		if err != nil {
-			panic(err)
+			logger.Fatal(err)
 		}
 
 		if n == 1 {
@@ -197,7 +197,7 @@ func readKey() rune {
 		var seq [2]byte
 		n, err := goedit.reader.Read(seq[:])
 		if err != nil {
-			panic(err)
+			logger.Fatal(err)
 		}
 
 		if n != 2 {
@@ -209,7 +209,7 @@ func readKey() rune {
 				var tilde [1]byte
 				n, err := goedit.reader.Read(tilde[:])
 				if err != nil {
-					panic(err)
+					logger.Fatal(err)
 				}
 
 				if n != 1 {
