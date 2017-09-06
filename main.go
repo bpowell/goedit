@@ -60,7 +60,7 @@ type editor struct {
 	mode         int
 	fileContents []string
 	filename     string
-	fileOffSet   int
+	rowOffSet    int
 	numOfRows    int
 }
 
@@ -103,7 +103,7 @@ func openFile(filename string) {
 
 func drawRows() {
 	for x := 0; x < goedit.height; x++ {
-		filerow := x + goedit.fileOffSet
+		filerow := x + goedit.rowOffSet
 		if filerow >= goedit.numOfRows {
 			goedit.editorUI.WriteString("~")
 		} else {
@@ -118,12 +118,12 @@ func drawRows() {
 }
 
 func scroll() {
-	if goedit.cursor.y < goedit.fileOffSet {
-		goedit.fileOffSet = goedit.cursor.y
+	if goedit.cursor.y < goedit.rowOffSet {
+		goedit.rowOffSet = goedit.cursor.y
 	}
 
-	if goedit.cursor.y >= goedit.fileOffSet+goedit.height {
-		goedit.fileOffSet = goedit.cursor.y - goedit.height + 1
+	if goedit.cursor.y >= goedit.rowOffSet+goedit.height {
+		goedit.rowOffSet = goedit.cursor.y - goedit.height + 1
 	}
 }
 
