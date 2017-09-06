@@ -4,10 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"syscall"
 	"unsafe"
 )
+
+var errorlog *os.File
+var logger *log.Logger
 
 const (
 	CURSOR_UP    = 1000
@@ -68,6 +72,13 @@ type editor struct {
 var goedit editor
 
 func init() {
+	errorlog, errr := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if errr != nil {
+		panic(errr)
+	}
+
+	logger = log.New(errorlog, "goedit: ", log.Lshortfile|log.LstdFlags)
+
 	goedit = editor{}
 	goedit.mode = CMD_MODE
 
