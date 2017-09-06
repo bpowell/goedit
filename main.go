@@ -122,8 +122,8 @@ func scroll() {
 		goedit.fileOffSet = goedit.cursor.y
 	}
 
-	if goedit.cursor.y >= goedit.fileOffSet+goedit.numOfRows {
-		goedit.fileOffSet = goedit.cursor.y - goedit.numOfRows + 1
+	if goedit.cursor.y >= goedit.fileOffSet+goedit.height {
+		goedit.fileOffSet = goedit.cursor.y - goedit.height + 1
 	}
 }
 
