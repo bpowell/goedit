@@ -61,6 +61,7 @@ type editor struct {
 	fileContents []string
 	filename     string
 	rowOffSet    int
+	colOffSet    int
 	numOfRows    int
 }
 
@@ -107,7 +108,17 @@ func drawRows() {
 		if filerow >= goedit.numOfRows {
 			goedit.editorUI.WriteString("~")
 		} else {
-			goedit.editorUI.WriteString(goedit.fileContents[filerow])
+			length := len(goedit.fileContents[filerow]) - goedit.colOffSet
+			if length < 0 {
+				length = 0
+			}
+
+			if length > goedit.width {
+				length = goedit.width
+			}
+
+			text := []byte(goedit.fileContents[filerow])
+			goedit.editorUI.Write(text[goedit.colOffSet:length])
 		}
 
 		goedit.editorUI.WriteString("\x1b[K")
