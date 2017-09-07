@@ -37,6 +37,13 @@ type winsize struct {
 	y      uint16
 }
 
+type erow struct {
+	chars  string
+	render string
+	size   int
+	rsize  int
+}
+
 type terminal int
 
 func (t terminal) Read(buf []byte) (int, error) {
@@ -67,6 +74,16 @@ type editor struct {
 	rowOffSet    int
 	colOffSet    int
 	numOfRows    int
+	rows         []erow
+}
+
+func (e *editor) appendRow(r string) {
+	buf := bytes.NewBufferString(r)
+	buf.WriteByte('\000')
+	row := erow{chars: buf.String()}
+	row.size = len(row.chars)
+
+	e.rows = append(e.rows, row)
 }
 
 var goedit editor
@@ -108,6 +125,7 @@ func openFile(filename string) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		goedit.fileContents = append(goedit.fileContents, scanner.Text())
+		goedit.appendRow(scanner.Text())
 	}
 
 	goedit.numOfRows = len(goedit.fileContents)
