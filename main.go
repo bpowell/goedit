@@ -62,19 +62,18 @@ type cursor struct {
 }
 
 type editor struct {
-	reader       terminal
-	orignial     syscall.Termios
-	height       int
-	width        int
-	editorUI     *bytes.Buffer
-	cursor       cursor
-	mode         int
-	fileContents []string
-	filename     string
-	rowOffSet    int
-	colOffSet    int
-	numOfRows    int
-	rows         []erow
+	reader    terminal
+	orignial  syscall.Termios
+	height    int
+	width     int
+	editorUI  *bytes.Buffer
+	cursor    cursor
+	mode      int
+	filename  string
+	rowOffSet int
+	colOffSet int
+	numOfRows int
+	rows      []erow
 }
 
 func (e *editor) appendRow(r string) {
@@ -124,11 +123,10 @@ func openFile(filename string) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		goedit.fileContents = append(goedit.fileContents, scanner.Text())
 		goedit.appendRow(scanner.Text())
 	}
 
-	goedit.numOfRows = len(goedit.fileContents)
+	goedit.numOfRows = len(goedit.rows)
 }
 
 func drawRows() {
@@ -137,7 +135,7 @@ func drawRows() {
 		if filerow >= goedit.numOfRows {
 			goedit.editorUI.WriteString("~")
 		} else {
-			length := len(goedit.fileContents[filerow]) - goedit.colOffSet
+			length := goedit.rows[filerow].size - goedit.colOffSet
 			if length < 0 {
 				length = 0
 			}
@@ -146,7 +144,7 @@ func drawRows() {
 				length = goedit.width
 			}
 
-			text := []byte(goedit.fileContents[filerow])
+			text := []byte(goedit.rows[filerow].chars)
 			goedit.editorUI.Write(text[goedit.colOffSet:length])
 		}
 
@@ -294,20 +292,20 @@ func (e *editor) moveCursor(key rune) {
 			e.cursor.x--
 		} else if e.cursor.y > 0 {
 			e.cursor.y--
-			e.cursor.x = len(e.fileContents[e.cursor.y])
+			e.cursor.x = e.rows[e.cursor.y].size
 		}
 	case CURSOR_RIGHT:
-		if e.cursor.y < e.numOfRows && e.cursor.x < len(e.fileContents[e.cursor.y]) {
+		if e.cursor.y < e.numOfRows && e.cursor.x < e.rows[e.cursor.y].size {
 			e.cursor.x++
-		} else if e.cursor.y < e.numOfRows && e.cursor.x == len(e.fileContents[e.cursor.y]) {
+		} else if e.cursor.y < e.numOfRows && e.cursor.x == e.rows[e.cursor.y].size {
 			e.cursor.y++
 			e.cursor.x = 0
 		}
 	}
 
 	if e.cursor.y < e.numOfRows {
-		if e.cursor.x > len(e.fileContents[e.cursor.y]) {
-			e.cursor.x = len(e.fileContents[e.cursor.y])
+		if e.cursor.x > e.rows[e.cursor.y].size {
+			e.cursor.x = e.rows[e.cursor.y].size
 		}
 	}
 }
