@@ -102,10 +102,23 @@ func (e *editor) appendRow(r string) {
 		}
 	}
 	buf.WriteByte('\000')
-	row.rsize = rsize + 1
+	row.rsize = rsize
 	row.render = buf.String()
 
 	e.rows = append(e.rows, row)
+}
+
+func cursorxToRx(row erow, cx int) int {
+	rx := 0
+	raw := []byte(row.chars)
+	for x := 0; x < cx; x++ {
+		if raw[x] == '\t' {
+			rx += (TAB_STOP - 1) - (rx % TAB_STOP)
+		}
+		rx++
+	}
+
+	return rx
 }
 
 var goedit editor
@@ -179,7 +192,10 @@ func drawRows() {
 }
 
 func scroll() {
-	goedit.rx = goedit.cursor.x
+	goedit.rx = 0
+	if goedit.cursor.y < goedit.numOfRows {
+		goedit.rx = cursorxToRx(goedit.rows[goedit.cursor.y], goedit.cursor.x)
+	}
 
 	if goedit.cursor.y < goedit.rowOffSet {
 		goedit.rowOffSet = goedit.cursor.y
@@ -341,7 +357,7 @@ func clearScreen() {
 	goedit.editorUI.WriteString("\x1b[?25l")
 	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
-	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.cursor.x-goedit.colOffSet)+1))
+	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.rx-goedit.colOffSet)+1))
 	goedit.editorUI.WriteString("\x1b[?25h")
 
 	goedit.reader.Write(goedit.editorUI.String())
