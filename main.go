@@ -396,17 +396,25 @@ func processKeyPress() {
 	case '\x1b':
 		goedit.mode = CMD_MODE
 	case PAGE_UP:
+		goedit.cursor.y = goedit.rowOffSet
 		for x := 0; x < goedit.height; x++ {
 			goedit.moveCursor(CURSOR_UP)
 		}
 	case PAGE_DOWN:
+		goedit.cursor.y = goedit.rowOffSet + goedit.height - 1
+		if goedit.cursor.y > goedit.numOfRows {
+			goedit.cursor.y = goedit.numOfRows
+		}
 		for x := 0; x < goedit.height; x++ {
 			goedit.moveCursor(CURSOR_DOWN)
 		}
 	case HOME_KEY:
 		goedit.cursor.x = 0
 	case END_KEY:
-		goedit.cursor.x = goedit.width - 1
+		if goedit.cursor.y < goedit.numOfRows {
+			goedit.cursor.x = goedit.rows[goedit.cursor.y].size
+		}
+
 	}
 }
 
