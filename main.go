@@ -144,7 +144,7 @@ func init() {
 	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&winsize))); err != 0 {
 		logger.Fatal(err)
 	}
-	goedit.height = int(winsize.height)
+	goedit.height = int(winsize.height) - 1
 	goedit.width = int(winsize.width)
 
 	goedit.editorUI = bytes.NewBufferString("")
@@ -163,6 +163,26 @@ func openFile(filename string) {
 	}
 
 	goedit.numOfRows = len(goedit.rows)
+	goedit.filename = filename
+}
+
+func drawStatusBar() {
+	status := fmt.Sprintf("%.20s - %d lines", goedit.filename, goedit.numOfRows)
+	length := len(status)
+	rstatus := fmt.Sprintf("%d,%d", goedit.cursor.y+1, goedit.rx+1)
+	rlength := len(rstatus)
+	goedit.editorUI.WriteString("\x1b[7m")
+	goedit.editorUI.WriteString(status)
+	for x := length; x < goedit.width; x++ {
+		if goedit.width-x == rlength {
+			goedit.editorUI.WriteString(rstatus)
+			break
+		} else {
+			goedit.editorUI.WriteString(" ")
+		}
+	}
+
+	goedit.editorUI.WriteString("\x1b[m")
 }
 
 func drawRows() {
@@ -185,9 +205,7 @@ func drawRows() {
 		}
 
 		goedit.editorUI.WriteString("\x1b[K")
-		if x < goedit.height-1 {
-			goedit.editorUI.WriteString("\r\n")
-		}
+		goedit.editorUI.WriteString("\r\n")
 	}
 }
 
@@ -357,6 +375,7 @@ func clearScreen() {
 	goedit.editorUI.WriteString("\x1b[?25l")
 	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
+	drawStatusBar()
 	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.rx-goedit.colOffSet)+1))
 	goedit.editorUI.WriteString("\x1b[?25h")
 
