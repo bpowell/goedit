@@ -14,6 +14,10 @@ var errorlog *os.File
 var logger *log.Logger
 
 const (
+	TAB_STOP = 4
+)
+
+const (
 	CURSOR_UP    = 1000
 	CURSOR_DOWN  = 1001
 	CURSOR_LEFT  = 1002
@@ -74,6 +78,7 @@ type editor struct {
 	colOffSet int
 	numOfRows int
 	rows      []erow
+	rx        int
 }
 
 func (e *editor) appendRow(r string) {
@@ -81,6 +86,24 @@ func (e *editor) appendRow(r string) {
 	buf.WriteByte('\000')
 	row := erow{chars: buf.String()}
 	row.size = len(row.chars)
+
+	buf.Reset()
+	raw := []byte(r)
+	rsize := 0
+	for x := 0; x < len(raw); x++ {
+		if raw[x] == '\t' {
+			for i := 0; i < TAB_STOP; i++ {
+				rsize++
+				buf.WriteByte(' ')
+			}
+		} else {
+			rsize++
+			buf.WriteByte(raw[x])
+		}
+	}
+	buf.WriteByte('\000')
+	row.rsize = rsize + 1
+	row.render = buf.String()
 
 	e.rows = append(e.rows, row)
 }
@@ -135,7 +158,7 @@ func drawRows() {
 		if filerow >= goedit.numOfRows {
 			goedit.editorUI.WriteString("~")
 		} else {
-			length := goedit.rows[filerow].size - goedit.colOffSet
+			length := goedit.rows[filerow].rsize - goedit.colOffSet
 			if length < 0 {
 				length = 0
 			}
@@ -144,7 +167,7 @@ func drawRows() {
 				length = goedit.width
 			}
 
-			text := []byte(goedit.rows[filerow].chars)
+			text := []byte(goedit.rows[filerow].render)
 			goedit.editorUI.Write(text[goedit.colOffSet:length])
 		}
 
@@ -156,6 +179,8 @@ func drawRows() {
 }
 
 func scroll() {
+	goedit.rx = goedit.cursor.x
+
 	if goedit.cursor.y < goedit.rowOffSet {
 		goedit.rowOffSet = goedit.cursor.y
 	}
@@ -164,12 +189,12 @@ func scroll() {
 		goedit.rowOffSet = goedit.cursor.y - goedit.height + 1
 	}
 
-	if goedit.cursor.x < goedit.colOffSet {
-		goedit.colOffSet = goedit.cursor.x
+	if goedit.rx < goedit.colOffSet {
+		goedit.colOffSet = goedit.rx
 	}
 
-	if goedit.cursor.x >= goedit.colOffSet+goedit.width {
-		goedit.colOffSet = goedit.cursor.x - goedit.width + 1
+	if goedit.rx >= goedit.colOffSet+goedit.width {
+		goedit.colOffSet = goedit.rx - goedit.width + 1
 	}
 }
 
