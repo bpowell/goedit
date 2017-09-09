@@ -102,6 +102,40 @@ func (r *erow) updateRow() {
 	r.render = buf.String()
 }
 
+func (r *erow) insertRune(c rune, pos int) {
+	if pos < 0 || pos > r.size {
+		pos = r.size
+	}
+
+	buf := bytes.NewBufferString("")
+	raw := []byte(r.chars)
+
+	if pos == 0 {
+		buf.WriteRune(c)
+		buf.WriteString(r.chars)
+	} else if pos == r.size {
+		buf.WriteString(r.chars)
+		buf.WriteRune(c)
+	} else {
+		buf.WriteString(string(raw[0:pos]))
+		buf.WriteRune(c)
+		buf.WriteString(string(raw[pos:]))
+	}
+
+	r.chars = buf.String()
+	r.size = len(r.chars)
+	r.updateRow()
+}
+
+func editorInsertRune(c rune) {
+	if goedit.cursor.y == goedit.numOfRows {
+		goedit.appendRow("")
+	}
+
+	goedit.rows[goedit.cursor.y].insertRune(c, goedit.cursor.x)
+	goedit.cursor.x++
+}
+
 func (e *editor) appendRow(r string) {
 	buf := bytes.NewBufferString(r)
 	buf.WriteByte('\000')
@@ -398,32 +432,38 @@ func clearScreen() {
 func processKeyPress() {
 	key := readKey()
 
+	if goedit.mode == CMD_MODE {
+		switch key {
+		case 'h':
+			if goedit.mode == CMD_MODE {
+				goedit.moveCursor(CURSOR_LEFT)
+			}
+		case 'j':
+			if goedit.mode == CMD_MODE {
+				goedit.moveCursor(CURSOR_DOWN)
+			}
+		case 'k':
+			if goedit.mode == CMD_MODE {
+				goedit.moveCursor(CURSOR_UP)
+			}
+		case 'l':
+			if goedit.mode == CMD_MODE {
+				goedit.moveCursor(CURSOR_RIGHT)
+			}
+		case 'i':
+			if goedit.mode == CMD_MODE {
+				goedit.mode = INSERT_MODE
+				return
+			}
+		}
+	}
+
 	switch key {
 	case ('q' & 0x1f):
 		resetMode()
 		os.Exit(0)
 	case CURSOR_DOWN, CURSOR_UP, CURSOR_LEFT, CURSOR_RIGHT:
 		goedit.moveCursor(key)
-	case 'h':
-		if goedit.mode == CMD_MODE {
-			goedit.moveCursor(CURSOR_LEFT)
-		}
-	case 'j':
-		if goedit.mode == CMD_MODE {
-			goedit.moveCursor(CURSOR_DOWN)
-		}
-	case 'k':
-		if goedit.mode == CMD_MODE {
-			goedit.moveCursor(CURSOR_UP)
-		}
-	case 'l':
-		if goedit.mode == CMD_MODE {
-			goedit.moveCursor(CURSOR_RIGHT)
-		}
-	case 'i':
-		if goedit.mode == CMD_MODE {
-			goedit.mode = INSERT_MODE
-		}
 	case '\x1b':
 		goedit.mode = CMD_MODE
 	case PAGE_UP:
@@ -445,7 +485,10 @@ func processKeyPress() {
 		if goedit.cursor.y < goedit.numOfRows {
 			goedit.cursor.x = goedit.rows[goedit.cursor.y].size
 		}
-
+	default:
+		if goedit.mode == INSERT_MODE {
+			editorInsertRune(key)
+		}
 	}
 }
 
