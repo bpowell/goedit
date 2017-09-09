@@ -82,14 +82,9 @@ type editor struct {
 	editormsg string
 }
 
-func (e *editor) appendRow(r string) {
-	buf := bytes.NewBufferString(r)
-	buf.WriteByte('\000')
-	row := erow{chars: buf.String()}
-	row.size = len(row.chars)
-
-	buf.Reset()
-	raw := []byte(r)
+func (r *erow) updateRow() {
+	buf := bytes.NewBufferString("")
+	raw := []byte(r.chars)
 	rsize := 0
 	for x := 0; x < len(raw); x++ {
 		if raw[x] == '\t' {
@@ -103,8 +98,17 @@ func (e *editor) appendRow(r string) {
 		}
 	}
 	buf.WriteByte('\000')
-	row.rsize = rsize
-	row.render = buf.String()
+	r.rsize = rsize
+	r.render = buf.String()
+}
+
+func (e *editor) appendRow(r string) {
+	buf := bytes.NewBufferString(r)
+	buf.WriteByte('\000')
+	row := erow{chars: buf.String()}
+	row.size = len(row.chars)
+
+	row.updateRow()
 
 	e.rows = append(e.rows, row)
 }
