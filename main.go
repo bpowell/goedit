@@ -18,6 +18,7 @@ const (
 )
 
 const (
+	BACKSPACE    = 127
 	CURSOR_UP    = 1000
 	CURSOR_DOWN  = 1001
 	CURSOR_LEFT  = 1002
@@ -485,6 +486,10 @@ func processKeyPress() {
 		if goedit.cursor.y < goedit.numOfRows {
 			goedit.cursor.x = goedit.rows[goedit.cursor.y].size
 		}
+	case BACKSPACE, DEL_KEY:
+		break
+	case '\r':
+		break
 	default:
 		if goedit.mode == INSERT_MODE {
 			editorInsertRune(key)
