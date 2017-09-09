@@ -79,6 +79,7 @@ type editor struct {
 	numOfRows int
 	rows      []erow
 	rx        int
+	editormsg string
 }
 
 func (e *editor) appendRow(r string) {
@@ -144,7 +145,7 @@ func init() {
 	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&winsize))); err != 0 {
 		logger.Fatal(err)
 	}
-	goedit.height = int(winsize.height) - 1
+	goedit.height = int(winsize.height) - 2
 	goedit.width = int(winsize.width)
 
 	goedit.editorUI = bytes.NewBufferString("")
@@ -183,6 +184,12 @@ func drawStatusBar() {
 	}
 
 	goedit.editorUI.WriteString("\x1b[m")
+	goedit.editorUI.WriteString("\r\n")
+}
+
+func drawMessageBar() {
+	goedit.editorUI.WriteString("\x1b[K")
+	goedit.editorUI.WriteString(goedit.editormsg)
 }
 
 func drawRows() {
@@ -376,6 +383,7 @@ func clearScreen() {
 	goedit.editorUI.WriteString("\x1b[H")
 	drawRows()
 	drawStatusBar()
+	drawMessageBar()
 	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.rx-goedit.colOffSet)+1))
 	goedit.editorUI.WriteString("\x1b[?25h")
 
