@@ -440,8 +440,14 @@ func (e *editor) save() {
 	text := e.rowsToString()
 	length := len(text)
 
-	logger.Println(file.Truncate(int64(length)))
-	logger.Println(file.WriteAt([]byte(text), 0))
+	if err := file.Truncate(int64(length)); err != nil {
+		e.editormsg = err.Error()
+		return
+	}
+
+	if _, err := file.WriteAt([]byte(text), 0); err != nil {
+		e.editormsg = err.Error()
+	}
 }
 
 func clearScreen() {
