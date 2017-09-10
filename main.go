@@ -130,10 +130,34 @@ func editorDelRune() {
 		return
 	}
 
+	if goedit.cursor.x == 0 && goedit.cursor.y == 0 {
+		return
+	}
+
 	if goedit.cursor.x > 0 {
 		goedit.rows[goedit.cursor.y].deleteRune(goedit.cursor.x - 1)
 		goedit.cursor.x--
+	} else {
+		goedit.cursor.x = goedit.rows[goedit.cursor.y-1].size
+		goedit.rows[goedit.cursor.y-1].appendRow(goedit.rows[goedit.cursor.y].chars)
+		editorDelRow(goedit.cursor.y)
+		goedit.cursor.y--
 	}
+}
+
+func editorDelRow(pos int) {
+	if pos < 0 || pos >= goedit.numOfRows {
+		return
+	}
+
+	goedit.rows = append(goedit.rows[:pos], goedit.rows[pos+1:]...)
+	goedit.numOfRows--
+}
+
+func (r *erow) appendRow(chars string) {
+	r.chars = fmt.Sprintf("%s%s\000", r.chars, chars)
+	r.size = len(r.chars)
+	r.updateRow()
 }
 
 func (r *erow) insertRune(c rune, pos int) {
