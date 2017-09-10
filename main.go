@@ -493,6 +493,7 @@ func processKeyPress() {
 		case 'i':
 			if goedit.mode == CMD_MODE {
 				goedit.mode = INSERT_MODE
+				goedit.editormsg = "-- INSERT --"
 				return
 			}
 		}
@@ -508,6 +509,7 @@ func processKeyPress() {
 		goedit.moveCursor(key)
 	case '\x1b':
 		goedit.mode = CMD_MODE
+		goedit.editormsg = ""
 	case PAGE_UP:
 		goedit.cursor.y = goedit.rowOffSet
 		for x := 0; x < goedit.height; x++ {
