@@ -103,6 +103,39 @@ func (r *erow) updateRow() {
 	r.render = buf.String()
 }
 
+func (r *erow) deleteRune(pos int) {
+	if pos < 0 || pos > r.size {
+		return
+	}
+
+	buf := bytes.NewBufferString("")
+	raw := []byte(r.chars)
+
+	if pos == 0 {
+		buf.Write(raw[1:])
+	} else if pos == r.size {
+		buf.Write(raw[0 : len(raw)-2])
+	} else {
+		buf.Write(raw[0:pos])
+		buf.Write(raw[pos+1:])
+	}
+
+	r.chars = buf.String()
+	r.size--
+	r.updateRow()
+}
+
+func editorDelRune() {
+	if goedit.cursor.y == goedit.numOfRows {
+		return
+	}
+
+	if goedit.cursor.x > 0 {
+		goedit.rows[goedit.cursor.y].deleteRune(goedit.cursor.x - 1)
+		goedit.cursor.x--
+	}
+}
+
 func (r *erow) insertRune(c rune, pos int) {
 	if pos < 0 || pos > r.size {
 		pos = r.size
@@ -529,8 +562,16 @@ func processKeyPress() {
 		if goedit.cursor.y < goedit.numOfRows {
 			goedit.cursor.x = goedit.rows[goedit.cursor.y].size
 		}
-	case BACKSPACE, DEL_KEY:
-		break
+	case BACKSPACE:
+		if goedit.mode == CMD_MODE {
+			return
+		}
+		editorDelRune()
+	case DEL_KEY:
+		if key == DEL_KEY {
+			goedit.moveCursor(CURSOR_RIGHT)
+		}
+		editorDelRune()
 	case '\r':
 		break
 	default:
