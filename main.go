@@ -445,9 +445,13 @@ func (e *editor) save() {
 		return
 	}
 
-	if _, err := file.WriteAt([]byte(text), 0); err != nil {
+	n, err := file.WriteAt([]byte(text), 0)
+	if err != nil {
 		e.editormsg = err.Error()
+		return
 	}
+
+	e.editormsg = fmt.Sprintf("\"%s\" %dL %d bytess written to disk", e.filename, e.numOfRows, n)
 }
 
 func clearScreen() {
