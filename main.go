@@ -415,6 +415,35 @@ func (e *editor) moveCursor(key rune) {
 	}
 }
 
+func (e *editor) rowsToString() string {
+	buf := bytes.NewBufferString("")
+	for _, r := range e.rows {
+		raw := []byte(r.chars)
+		raw[len(raw)-1] = '\n'
+		buf.Write(raw)
+	}
+
+	return buf.String()
+}
+
+func (e *editor) save() {
+	if e.filename == "" {
+		return
+	}
+
+	file, err := os.OpenFile(e.filename, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer file.Close()
+
+	text := e.rowsToString()
+	length := len(text)
+
+	logger.Println(file.Truncate(int64(length)))
+	logger.Println(file.WriteAt([]byte(text), 0))
+}
+
 func clearScreen() {
 	scroll()
 	goedit.editorUI.Reset()
@@ -463,6 +492,8 @@ func processKeyPress() {
 	case ('q' & 0x1f):
 		resetMode()
 		os.Exit(0)
+	case ('s' & 0x1f):
+		goedit.save()
 	case CURSOR_DOWN, CURSOR_UP, CURSOR_LEFT, CURSOR_RIGHT:
 		goedit.moveCursor(key)
 	case '\x1b':
