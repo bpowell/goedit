@@ -566,27 +566,17 @@ func processKeyPress() {
 	if goedit.mode == CMD_MODE {
 		switch key {
 		case 'h':
-			if goedit.mode == CMD_MODE {
-				goedit.moveCursor(CURSOR_LEFT)
-			}
+			goedit.moveCursor(CURSOR_LEFT)
 		case 'j':
-			if goedit.mode == CMD_MODE {
-				goedit.moveCursor(CURSOR_DOWN)
-			}
+			goedit.moveCursor(CURSOR_DOWN)
 		case 'k':
-			if goedit.mode == CMD_MODE {
-				goedit.moveCursor(CURSOR_UP)
-			}
+			goedit.moveCursor(CURSOR_UP)
 		case 'l':
-			if goedit.mode == CMD_MODE {
-				goedit.moveCursor(CURSOR_RIGHT)
-			}
+			goedit.moveCursor(CURSOR_RIGHT)
 		case 'i':
-			if goedit.mode == CMD_MODE {
-				goedit.mode = INSERT_MODE
-				goedit.editormsg = "-- INSERT --"
-				return
-			}
+			goedit.mode = INSERT_MODE
+			goedit.editormsg = "-- INSERT --"
+			return
 		}
 	}
 
