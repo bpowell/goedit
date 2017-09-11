@@ -187,14 +187,18 @@ func (r *erow) insertRune(c rune, pos int) {
 
 func editorInsertRune(c rune) {
 	if goedit.cursor.y == goedit.numOfRows {
-		goedit.appendRow("")
+		goedit.insertRow(goedit.numOfRows, "")
 	}
 
 	goedit.rows[goedit.cursor.y].insertRune(c, goedit.cursor.x)
 	goedit.cursor.x++
 }
 
-func (e *editor) appendRow(r string) {
+func (e *editor) insertRow(pos int, r string) {
+	if pos < 0 || pos > e.numOfRows {
+		return
+	}
+
 	buf := bytes.NewBufferString(r)
 	buf.WriteByte('\000')
 	row := erow{chars: buf.String()}
@@ -202,7 +206,35 @@ func (e *editor) appendRow(r string) {
 
 	row.updateRow()
 
-	e.rows = append(e.rows, row)
+	if pos == 0 {
+		var rows []erow
+		rows = append(rows, row)
+		goedit.rows = append(rows, goedit.rows...)
+	} else if pos == goedit.numOfRows {
+		goedit.rows = append(goedit.rows, row)
+	} else {
+		rows := append(goedit.rows[:pos-1], row)
+		goedit.rows = append(rows, goedit.rows[pos-1:]...)
+	}
+
+	goedit.numOfRows++
+}
+
+func editorInsertNewline() {
+	if goedit.cursor.x == 0 {
+		goedit.insertRow(goedit.cursor.y, "")
+	} else {
+		raw := []byte(goedit.rows[goedit.cursor.y].chars)
+		newline := string(raw[goedit.cursor.x:])
+		oldline := string(raw[:goedit.cursor.x])
+		goedit.insertRow(goedit.cursor.y+1, newline)
+		goedit.rows[goedit.cursor.y].chars = oldline
+		goedit.rows[goedit.cursor.y].size = len(oldline)
+		goedit.rows[goedit.cursor.y].updateRow()
+	}
+
+	goedit.cursor.x = 0
+	goedit.cursor.y++
 }
 
 func cursorxToRx(row erow, cx int) int {
@@ -254,9 +286,11 @@ func openFile(filename string) {
 	}
 	defer file.Close()
 
+	line := 0
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		goedit.appendRow(scanner.Text())
+		goedit.insertRow(line, scanner.Text())
+		line++
 	}
 
 	goedit.numOfRows = len(goedit.rows)
@@ -597,7 +631,7 @@ func processKeyPress() {
 		}
 		editorDelRune()
 	case '\r':
-		break
+		editorInsertNewline()
 	default:
 		if goedit.mode == INSERT_MODE {
 			editorInsertRune(key)
