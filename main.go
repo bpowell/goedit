@@ -32,7 +32,7 @@ const (
 
 const (
 	INSERT_MODE = 1
-	CMD_MODE    = 2
+	NORMAL_MODE = 2
 )
 
 type winsize struct {
@@ -261,7 +261,7 @@ func init() {
 	logger = log.New(errorlog, "goedit: ", log.Lshortfile|log.LstdFlags)
 
 	goedit = editor{}
-	goedit.mode = CMD_MODE
+	goedit.mode = NORMAL_MODE
 
 	goedit.reader = terminal(syscall.Stdin)
 	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TCGETS, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
@@ -563,7 +563,7 @@ func clearScreen() {
 func processKeyPress() {
 	key := readKey()
 
-	if goedit.mode == CMD_MODE {
+	if goedit.mode == NORMAL_MODE {
 		switch key {
 		case 'h':
 			goedit.moveCursor(CURSOR_LEFT)
@@ -589,7 +589,7 @@ func processKeyPress() {
 	case CURSOR_DOWN, CURSOR_UP, CURSOR_LEFT, CURSOR_RIGHT:
 		goedit.moveCursor(key)
 	case '\x1b':
-		goedit.mode = CMD_MODE
+		goedit.mode = NORMAL_MODE
 		goedit.editormsg = ""
 	case PAGE_UP:
 		goedit.cursor.y = goedit.rowOffSet
@@ -611,7 +611,7 @@ func processKeyPress() {
 			goedit.cursor.x = goedit.rows[goedit.cursor.y].size
 		}
 	case BACKSPACE:
-		if goedit.mode == CMD_MODE {
+		if goedit.mode == NORMAL_MODE {
 			return
 		}
 		editorDelRune()
