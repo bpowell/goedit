@@ -237,6 +237,22 @@ func editorInsertNewline() {
 	goedit.cursor.y++
 }
 
+func editorPrompt(msg string) string {
+	buf := bytes.NewBufferString("")
+	for {
+		goedit.editormsg = fmt.Sprintf("%s%s", msg, buf)
+		clearScreen()
+
+		key := readKey()
+		if key == '\r' {
+			goedit.editormsg = ""
+			return buf.String()
+		} else {
+			buf.WriteRune(key)
+		}
+	}
+}
+
 func cursorxToRx(row erow, cx int) int {
 	rx := 0
 	raw := []byte(row.chars)
@@ -519,7 +535,7 @@ func (e *editor) rowsToString() string {
 
 func (e *editor) save() {
 	if e.filename == "" {
-		return
+		e.filename = editorPrompt("Save as ")
 	}
 
 	file, err := os.OpenFile(e.filename, os.O_RDWR|os.O_CREATE, 0644)
