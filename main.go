@@ -33,6 +33,7 @@ const (
 const (
 	INSERT_MODE = 1
 	NORMAL_MODE = 2
+	CMD_MODE    = 3
 )
 
 type winsize struct {
@@ -238,14 +239,19 @@ func editorInsertNewline() {
 }
 
 func editorPrompt(msg string) string {
+	oldcursor := goedit.cursor
 	buf := bytes.NewBufferString("")
+
 	for {
 		goedit.editormsg = fmt.Sprintf("%s%s", msg, buf)
+		goedit.cursor.x = len(goedit.editormsg)
+		goedit.cursor.y = goedit.height + 1
 		clearScreen()
 
 		key := readKey()
 		if key == '\r' {
 			goedit.editormsg = ""
+			goedit.cursor = oldcursor
 			return buf.String()
 		} else {
 			buf.WriteRune(key)
@@ -363,25 +369,27 @@ func drawRows() {
 }
 
 func scroll() {
-	goedit.rx = 0
-	if goedit.cursor.y < goedit.numOfRows {
-		goedit.rx = cursorxToRx(goedit.rows[goedit.cursor.y], goedit.cursor.x)
-	}
+	if goedit.mode != CMD_MODE {
+		goedit.rx = 0
+		if goedit.cursor.y < goedit.numOfRows {
+			goedit.rx = cursorxToRx(goedit.rows[goedit.cursor.y], goedit.cursor.x)
+		}
 
-	if goedit.cursor.y < goedit.rowOffSet {
-		goedit.rowOffSet = goedit.cursor.y
-	}
+		if goedit.cursor.y < goedit.rowOffSet {
+			goedit.rowOffSet = goedit.cursor.y
+		}
 
-	if goedit.cursor.y >= goedit.rowOffSet+goedit.height {
-		goedit.rowOffSet = goedit.cursor.y - goedit.height + 1
-	}
+		if goedit.cursor.y >= goedit.rowOffSet+goedit.height {
+			goedit.rowOffSet = goedit.cursor.y - goedit.height + 1
+		}
 
-	if goedit.rx < goedit.colOffSet {
-		goedit.colOffSet = goedit.rx
-	}
+		if goedit.rx < goedit.colOffSet {
+			goedit.colOffSet = goedit.rx
+		}
 
-	if goedit.rx >= goedit.colOffSet+goedit.width {
-		goedit.colOffSet = goedit.rx - goedit.width + 1
+		if goedit.rx >= goedit.colOffSet+goedit.width {
+			goedit.colOffSet = goedit.rx - goedit.width + 1
+		}
 	}
 }
 
@@ -569,7 +577,11 @@ func clearScreen() {
 	drawRows()
 	drawStatusBar()
 	drawMessageBar()
-	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.rx-goedit.colOffSet)+1))
+	if goedit.mode == CMD_MODE {
+		goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", goedit.cursor.y+1, goedit.cursor.x+1))
+	} else {
+		goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.rx-goedit.colOffSet)+1))
+	}
 	goedit.editorUI.WriteString("\x1b[?25h")
 
 	goedit.reader.Write(goedit.editorUI.String())
@@ -589,6 +601,10 @@ func processKeyPress() {
 			goedit.moveCursor(CURSOR_UP)
 		case 'l':
 			goedit.moveCursor(CURSOR_RIGHT)
+		case ':':
+			goedit.mode = CMD_MODE
+			editorPrompt(":")
+			goedit.mode = NORMAL_MODE
 		case 'i':
 			goedit.mode = INSERT_MODE
 			goedit.editormsg = "-- INSERT --"
