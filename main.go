@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"syscall"
 	"unsafe"
@@ -68,20 +69,21 @@ type cursor struct {
 }
 
 type editor struct {
-	reader    terminal
-	orignial  syscall.Termios
-	height    int
-	width     int
-	editorUI  *bytes.Buffer
-	cursor    cursor
-	mode      int
-	filename  string
-	rowOffSet int
-	colOffSet int
-	numOfRows int
-	rows      []erow
-	rx        int
-	editormsg string
+	reader        terminal
+	orignial      syscall.Termios
+	height        int
+	width         int
+	editorUI      *bytes.Buffer
+	cursor        cursor
+	mode          int
+	filename      string
+	rowOffSet     int
+	colOffSet     int
+	numOfRows     int
+	rows          []erow
+	rx            int
+	editormsg     string
+	lineNumOffSet int
 }
 
 func (r *erow) updateRow() {
@@ -219,6 +221,7 @@ func (e *editor) insertRow(pos int, r string) {
 	}
 
 	goedit.numOfRows++
+	e.lineNumOffSet = int(math.Log10(float64(e.numOfRows))) + 2
 }
 
 func editorInsertNewline() {
@@ -360,6 +363,8 @@ func drawRows() {
 			}
 
 			text := []byte(goedit.rows[filerow].render)
+			formatter := fmt.Sprintf("%%%dd ", goedit.lineNumOffSet-1)
+			goedit.editorUI.WriteString(fmt.Sprintf(formatter, filerow+1))
 			goedit.editorUI.Write(text[goedit.colOffSet:length])
 		}
 
@@ -580,7 +585,7 @@ func clearScreen() {
 	if goedit.mode == CMD_MODE {
 		goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", goedit.cursor.y+1, goedit.cursor.x+1))
 	} else {
-		goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.rx-goedit.colOffSet)+1))
+		goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dH", (goedit.cursor.y-goedit.rowOffSet)+1, (goedit.rx-goedit.colOffSet)+1+goedit.lineNumOffSet))
 	}
 	goedit.editorUI.WriteString("\x1b[?25h")
 

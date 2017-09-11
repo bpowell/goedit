@@ -7,7 +7,7 @@ My attempt to make a text editor in Go for the Go programming language.
 - [] Save file that is being edited
 - [] BASIC vim like keybindings
 - [] Run Go code from the editor
-- [] Line numbers
+- [x] Line numbers
 
 ## Inspiration
 http://viewsourcecode.org/snaptoken/kilo/ tutorial on how to make text editor in C
