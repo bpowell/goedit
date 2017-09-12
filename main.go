@@ -244,7 +244,8 @@ func editorInsertNewline() {
 func editorPrompt(msg string) string {
 	oldcursor := goedit.cursor
 	buf := bytes.NewBufferString("")
-	goedit.cursor.x = len(msg)
+	msgLength := len(msg)
+	goedit.cursor.x = msgLength
 
 	for {
 		goedit.editormsg = fmt.Sprintf("%s%s", msg, buf)
@@ -258,11 +259,11 @@ func editorPrompt(msg string) string {
 			goedit.cursor = oldcursor
 			return buf.String()
 		case BACKSPACE:
-			if goedit.cursor.x <= 1 {
+			if goedit.cursor.x <= msgLength {
 				break
 			}
 
-			if goedit.cursor.x == 1 {
+			if goedit.cursor.x == msgLength {
 				buf.Reset()
 			} else if goedit.cursor.x == len(goedit.editormsg) {
 				tmp := bytes.NewBuffer(buf.Bytes()[:len(buf.String())-1])
@@ -275,7 +276,7 @@ func editorPrompt(msg string) string {
 
 			goedit.cursor.x--
 		case CURSOR_LEFT:
-			if goedit.cursor.x != 1 {
+			if goedit.cursor.x != msgLength {
 				goedit.cursor.x--
 			}
 		case CURSOR_RIGHT:
