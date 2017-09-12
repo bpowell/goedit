@@ -652,7 +652,9 @@ func processKeyPress() {
 		resetMode()
 		os.Exit(0)
 	case ('s' & 0x1f):
+		goedit.mode = CMD_MODE
 		goedit.save()
+		goedit.mode = NORMAL_MODE
 	case CURSOR_DOWN, CURSOR_UP, CURSOR_LEFT, CURSOR_RIGHT:
 		goedit.moveCursor(key)
 	case '\x1b':
