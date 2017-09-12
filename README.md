@@ -4,7 +4,7 @@ My attempt to make a text editor in Go for the Go programming language.
 
 ## Features
 - [] Syntax highlighting for Go
-- [] Save file that is being edited
+- [x] Save file that is being edited
 - [] BASIC vim like keybindings
 - [] Run Go code from the editor
 - [x] Line numbers
