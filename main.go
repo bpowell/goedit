@@ -687,7 +687,9 @@ func processKeyPress() {
 		}
 		editorDelRune()
 	case '\r':
-		editorInsertNewline()
+		if goedit.mode == INSERT_MODE {
+			editorInsertNewline()
+		}
 	default:
 		if goedit.mode == INSERT_MODE {
 			editorInsertRune(key)
