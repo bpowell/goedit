@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -255,7 +256,7 @@ func editorPrompt(msg string) string {
 		key := readKey()
 		switch key {
 		case '\r':
-			goedit.editormsg = ""
+			//goedit.editormsg = ""
 			goedit.cursor = oldcursor
 			return buf.String()
 		case BACKSPACE:
@@ -623,6 +624,18 @@ func clearScreen() {
 	goedit.editorUI.Reset()
 }
 
+func editorSearch() {
+	query := editorPrompt("/")
+	for i, row := range goedit.rows {
+		indx := strings.Index(row.render, query)
+		if indx != -1 {
+			goedit.cursor.y = i
+			goedit.cursor.x = indx
+			break
+		}
+	}
+}
+
 func processKeyPress() {
 	key := readKey()
 
@@ -639,6 +652,10 @@ func processKeyPress() {
 		case ':':
 			goedit.mode = CMD_MODE
 			editorPrompt(":")
+			goedit.mode = NORMAL_MODE
+		case '/':
+			goedit.mode = CMD_MODE
+			editorSearch()
 			goedit.mode = NORMAL_MODE
 		case 'i':
 			goedit.mode = INSERT_MODE
