@@ -660,7 +660,7 @@ func editorNextSearch() {
 		}
 	} else {
 		if goedit.search.location.y+1 > goedit.numOfRows {
-			return
+			goedit.search.location.y = -1
 		}
 	}
 
