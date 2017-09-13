@@ -69,6 +69,11 @@ type cursor struct {
 	x, y int
 }
 
+type searchObject struct {
+	query    string
+	location cursor
+}
+
 type editor struct {
 	reader        terminal
 	orignial      syscall.Termios
@@ -85,6 +90,7 @@ type editor struct {
 	rx            int
 	editormsg     string
 	lineNumOffSet int
+	search        searchObject
 }
 
 func (r *erow) updateRow() {
@@ -626,14 +632,53 @@ func clearScreen() {
 
 func editorSearch() {
 	query := editorPrompt("/")
+	goedit.search.query = query
 	for i, row := range goedit.rows {
 		indx := strings.Index(row.render, query)
 		if indx != -1 {
 			goedit.cursor.y = i
 			goedit.cursor.x = indx
+			goedit.search.location = goedit.cursor
 			break
 		}
 	}
+}
+
+func editorNextSearch() {
+	if goedit.search.query == "" {
+		return
+	}
+
+	if goedit.search.location.x+1 < goedit.rows[goedit.search.location.y].rsize {
+		raw := []byte(goedit.rows[goedit.search.location.y].render)
+		indx := strings.Index(string(raw[goedit.search.location.x+1:]), goedit.search.query)
+		if indx != -1 {
+			goedit.cursor.x = indx
+			logger.Println(goedit.cursor)
+			goedit.search.location = goedit.cursor
+			return
+		}
+	} else {
+		if goedit.search.location.y+1 > goedit.numOfRows {
+			return
+		}
+	}
+
+	for i := goedit.search.location.y + 1; i < goedit.numOfRows; i++ {
+		indx := strings.Index(goedit.rows[i].render, goedit.search.query)
+		if indx != -1 {
+			goedit.cursor.y = i
+			goedit.cursor.x = indx
+			logger.Println(goedit.cursor)
+			goedit.search.location = goedit.cursor
+			return
+		}
+	}
+
+	goedit.editormsg = "Hit bottom, starting from the top"
+	goedit.search.location.x = 0
+	goedit.search.location.y = 0
+	editorNextSearch()
 }
 
 func processKeyPress() {
@@ -661,6 +706,8 @@ func processKeyPress() {
 			goedit.mode = INSERT_MODE
 			goedit.editormsg = "-- INSERT --"
 			return
+		case 'n':
+			editorNextSearch()
 		}
 	}
 
