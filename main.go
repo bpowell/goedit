@@ -654,7 +654,7 @@ func editorSearch() {
 		indx := strings.Index(row.render, query)
 		if indx != -1 {
 			goedit.cursor.y = i
-			goedit.cursor.x = indx
+			goedit.cursor.x = cursorxToCx(row, indx)
 			goedit.search.location = goedit.cursor
 			break
 		}
@@ -670,14 +670,9 @@ func editorNextSearch() {
 		raw := []byte(goedit.rows[goedit.search.location.y].render)
 		indx := strings.Index(string(raw[goedit.search.location.x+1:]), goedit.search.query)
 		if indx != -1 {
-			goedit.cursor.x = indx
-			logger.Println(goedit.cursor)
-			goedit.search.location = goedit.cursor
+			goedit.cursor.x = cursorxToCx(goedit.rows[goedit.search.location.y], indx)
+			goedit.search.location.x = indx
 			return
-		}
-	} else {
-		if goedit.search.location.y+1 > goedit.numOfRows {
-			goedit.search.location.y = -1
 		}
 	}
 
@@ -685,9 +680,9 @@ func editorNextSearch() {
 		indx := strings.Index(goedit.rows[i].render, goedit.search.query)
 		if indx != -1 {
 			goedit.cursor.y = i
-			goedit.cursor.x = indx
-			logger.Println(goedit.cursor)
-			goedit.search.location = goedit.cursor
+			goedit.cursor.x = cursorxToCx(goedit.rows[i], indx)
+			goedit.search.location.y = i
+			goedit.search.location.x = indx
 			return
 		}
 	}
