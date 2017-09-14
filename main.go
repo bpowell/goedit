@@ -310,6 +310,23 @@ func cursorxToRx(row erow, cx int) int {
 	return rx
 }
 
+func cursorxToCx(row erow, rx int) int {
+	cur_rx := 0
+	cx := 0
+	for cx = 0; cx < row.size; cx++ {
+		if row.chars[cx] == '\t' {
+			cur_rx += (TAB_STOP - 1) - (cur_rx % TAB_STOP)
+		}
+		cur_rx++
+
+		if cur_rx > rx {
+			return cx
+		}
+	}
+
+	return cx
+}
+
 var goedit editor
 
 func init() {
