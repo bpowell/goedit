@@ -85,6 +85,12 @@ type searchObject struct {
 	location cursor
 }
 
+type editorMsgBar struct {
+	msg     string
+	bgColor int
+	fgColor int
+}
+
 type editor struct {
 	reader        terminal
 	orignial      syscall.Termios
@@ -99,7 +105,7 @@ type editor struct {
 	numOfRows     int
 	rows          []erow
 	rx            int
-	editormsg     string
+	editormsg     editorMsgBar
 	lineNumOffSet int
 	search        searchObject
 }
@@ -266,7 +272,7 @@ func editorPrompt(msg string) string {
 	goedit.cursor.x = msgLength
 
 	for {
-		goedit.editormsg = fmt.Sprintf("%s%s", msg, buf)
+		goedit.editormsg.msg = fmt.Sprintf("%s%s", msg, buf)
 		goedit.cursor.y = goedit.height + 1
 		clearScreen()
 
@@ -283,7 +289,7 @@ func editorPrompt(msg string) string {
 
 			if goedit.cursor.x == msgLength {
 				buf.Reset()
-			} else if goedit.cursor.x == len(goedit.editormsg) {
+			} else if goedit.cursor.x == len(goedit.editormsg.msg) {
 				tmp := bytes.NewBuffer(buf.Bytes()[:len(buf.String())-1])
 				buf = tmp
 			} else {
@@ -298,7 +304,7 @@ func editorPrompt(msg string) string {
 				goedit.cursor.x--
 			}
 		case CURSOR_RIGHT:
-			if goedit.cursor.x < len(goedit.editormsg) {
+			if goedit.cursor.x < len(goedit.editormsg.msg) {
 				goedit.cursor.x++
 			}
 		default:
@@ -365,6 +371,8 @@ func init() {
 	goedit.width = int(winsize.width)
 
 	goedit.editorUI = bytes.NewBufferString("")
+	goedit.editormsg.fgColor = WHITE
+	goedit.editormsg.bgColor = BLACK + 10
 }
 
 func openFile(filename string) {
@@ -407,7 +415,9 @@ func drawStatusBar() {
 
 func drawMessageBar() {
 	goedit.editorUI.WriteString("\x1b[K")
-	goedit.editorUI.WriteString(goedit.editormsg)
+	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dm", goedit.editormsg.fgColor, goedit.editormsg.bgColor))
+	goedit.editorUI.WriteString(goedit.editormsg.msg)
+	goedit.editorUI.WriteString("\x1b[39m")
 }
 
 func drawRows() {
@@ -626,17 +636,17 @@ func (e *editor) save() {
 	length := len(text)
 
 	if err := file.Truncate(int64(length)); err != nil {
-		e.editormsg = err.Error()
+		e.editormsg.msg = err.Error()
 		return
 	}
 
 	n, err := file.WriteAt([]byte(text), 0)
 	if err != nil {
-		e.editormsg = err.Error()
+		e.editormsg.msg = err.Error()
 		return
 	}
 
-	e.editormsg = fmt.Sprintf("\"%s\" %dL %d bytess written to disk", e.filename, e.numOfRows, n)
+	e.editormsg.msg = fmt.Sprintf("\"%s\" %dL %d bytess written to disk", e.filename, e.numOfRows, n)
 }
 
 func clearScreen() {
@@ -698,7 +708,7 @@ func editorNextSearch() {
 		}
 	}
 
-	goedit.editormsg = "Hit bottom, starting from the top"
+	goedit.editormsg.msg = "Hit bottom, starting from the top"
 	goedit.search.location.x = 0
 	goedit.search.location.y = 0
 	editorNextSearch()
@@ -730,7 +740,7 @@ func editorPrevSearch() {
 		}
 	}
 
-	goedit.editormsg = "Hit top, starting from the bottom"
+	goedit.editormsg.msg = "Hit top, starting from the bottom"
 	goedit.search.location.x = goedit.rows[goedit.numOfRows-1].rsize
 	goedit.search.location.y = goedit.numOfRows - 1
 	editorPrevSearch()
@@ -759,7 +769,7 @@ func processKeyPress() {
 			goedit.mode = NORMAL_MODE
 		case 'i':
 			goedit.mode = INSERT_MODE
-			goedit.editormsg = "-- INSERT --"
+			goedit.editormsg.msg = "-- INSERT --"
 			return
 		case 'n':
 			editorNextSearch()
@@ -780,7 +790,7 @@ func processKeyPress() {
 		goedit.moveCursor(key)
 	case '\x1b':
 		goedit.mode = NORMAL_MODE
-		goedit.editormsg = ""
+		goedit.editormsg.msg = ""
 	case PAGE_UP:
 		goedit.cursor.y = goedit.rowOffSet
 		for x := 0; x < goedit.height; x++ {
