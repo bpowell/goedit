@@ -693,6 +693,38 @@ func editorNextSearch() {
 	editorNextSearch()
 }
 
+func editorPrevSearch() {
+	if goedit.search.query == "" {
+		return
+	}
+
+	if goedit.search.location.x-1 > 0 {
+		raw := []byte(goedit.rows[goedit.search.location.y].render)
+		indx := strings.Index(string(raw[:goedit.search.location.x-1]), goedit.search.query)
+		if indx != -1 {
+			goedit.cursor.x = cursorxToCx(goedit.rows[goedit.search.location.y], indx)
+			goedit.search.location.x = indx
+			return
+		}
+	}
+
+	for i := goedit.search.location.y - 1; i > 0; i-- {
+		indx := strings.Index(goedit.rows[i].render, goedit.search.query)
+		if indx != -1 {
+			goedit.cursor.y = i
+			goedit.cursor.x = cursorxToCx(goedit.rows[i], indx)
+			goedit.search.location.y = i
+			goedit.search.location.x = indx
+			return
+		}
+	}
+
+	goedit.editormsg = "Hit top, starting from the bottom"
+	goedit.search.location.x = goedit.rows[goedit.numOfRows-1].rsize
+	goedit.search.location.y = goedit.numOfRows - 1
+	editorPrevSearch()
+}
+
 func processKeyPress() {
 	key := readKey()
 
@@ -720,6 +752,8 @@ func processKeyPress() {
 			return
 		case 'n':
 			editorNextSearch()
+		case 'N':
+			editorPrevSearch()
 		}
 	}
 
