@@ -677,7 +677,7 @@ func editorSearch() {
 			goedit.cursor.x = cursorxToCx(row, indx)
 			goedit.search.location = goedit.cursor
 			goedit.search.query = query
-			break
+			return
 		}
 	}
 
