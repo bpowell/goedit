@@ -713,6 +713,7 @@ func editorNextSearch() {
 	}
 
 	goedit.editormsg.msg = "Hit bottom, starting from the top"
+	goedit.editormsg.fgColor = RED
 	goedit.search.location.x = 0
 	goedit.search.location.y = 0
 	editorNextSearch()
@@ -745,6 +746,7 @@ func editorPrevSearch() {
 	}
 
 	goedit.editormsg.msg = "Hit top, starting from the bottom"
+	goedit.editormsg.fgColor = RED
 	goedit.search.location.x = goedit.rows[goedit.numOfRows-1].rsize
 	goedit.search.location.y = goedit.numOfRows - 1
 	editorPrevSearch()
