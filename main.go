@@ -437,7 +437,7 @@ func drawRows() {
 
 			text := []byte(goedit.rows[filerow].render)
 			formatter := fmt.Sprintf("%%%dd ", goedit.lineNumOffSet-1)
-			goedit.editorUI.WriteString("\x1b[32m")
+			goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%dm", GREEN))
 			goedit.editorUI.WriteString(fmt.Sprintf(formatter, filerow+1))
 			goedit.editorUI.WriteString("\x1b[39m")
 			goedit.editorUI.Write(text[goedit.colOffSet:length])
