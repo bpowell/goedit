@@ -229,7 +229,7 @@ func (e *editor) insertRow(pos int, r string) {
 	buf := bytes.NewBufferString(r)
 	buf.WriteByte('\000')
 	row := erow{chars: buf.String()}
-	row.size = len(row.chars)
+	row.size = len(row.chars) - 1
 
 	row.updateRow()
 
