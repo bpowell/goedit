@@ -417,7 +417,7 @@ func drawMessageBar() {
 	goedit.editorUI.WriteString("\x1b[K")
 	goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%d;%dm", goedit.editormsg.fgColor, goedit.editormsg.bgColor))
 	goedit.editorUI.WriteString(goedit.editormsg.msg)
-	goedit.editorUI.WriteString("\x1b[39m")
+	goedit.editorUI.WriteString("\x1b[39;49m")
 }
 
 func drawRows() {
@@ -439,7 +439,7 @@ func drawRows() {
 			formatter := fmt.Sprintf("%%%dd ", goedit.lineNumOffSet-1)
 			goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%dm", GREEN))
 			goedit.editorUI.WriteString(fmt.Sprintf(formatter, filerow+1))
-			goedit.editorUI.WriteString("\x1b[39m")
+			goedit.editorUI.WriteString("\x1b[39;49m")
 			goedit.editorUI.Write(text[goedit.colOffSet:length])
 		}
 
@@ -670,16 +670,20 @@ func clearScreen() {
 
 func editorSearch() {
 	query := editorPrompt("/")
-	goedit.search.query = query
 	for i, row := range goedit.rows {
 		indx := strings.Index(row.render, query)
 		if indx != -1 {
 			goedit.cursor.y = i
 			goedit.cursor.x = cursorxToCx(row, indx)
 			goedit.search.location = goedit.cursor
+			goedit.search.query = query
 			break
 		}
 	}
+
+	goedit.editormsg.msg = fmt.Sprintf("Pattern not found: %s", query)
+	goedit.editormsg.fgColor = WHITE
+	goedit.editormsg.bgColor = BLUE + 10
 }
 
 func editorNextSearch() {
@@ -791,6 +795,8 @@ func processKeyPress() {
 	case '\x1b':
 		goedit.mode = NORMAL_MODE
 		goedit.editormsg.msg = ""
+		goedit.editormsg.fgColor = WHITE
+		goedit.editormsg.bgColor = BLACK + 10
 	case PAGE_UP:
 		goedit.cursor.y = goedit.rowOffSet
 		for x := 0; x < goedit.height; x++ {
