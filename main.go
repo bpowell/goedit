@@ -226,7 +226,7 @@ func (e *editor) insertRow(pos int, r string) {
 		return
 	}
 
-	buf := bytes.NewBufferString(r)
+	buf := bytes.NewBufferString(strings.TrimRight(r, "\000"))
 	buf.WriteByte('\000')
 	row := erow{chars: buf.String()}
 	row.size = len(row.chars) - 1
@@ -254,7 +254,7 @@ func editorInsertNewline() {
 	} else {
 		raw := []byte(goedit.rows[goedit.cursor.y].chars)
 		newline := string(raw[goedit.cursor.x:])
-		oldline := string(raw[:goedit.cursor.x])
+		oldline := fmt.Sprintf("%s\000", string(raw[:goedit.cursor.x]))
 		goedit.insertRow(goedit.cursor.y+1, newline)
 		goedit.rows[goedit.cursor.y].chars = oldline
 		goedit.rows[goedit.cursor.y].size = len(oldline)
