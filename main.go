@@ -781,6 +781,10 @@ func processKeyPress() {
 			editorNextSearch()
 		case 'N':
 			editorPrevSearch()
+		case '$':
+			key = END_KEY
+		case '0':
+			key = HOME_KEY
 		}
 	}
 
