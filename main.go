@@ -152,6 +152,16 @@ func (r *erow) deleteRune(pos int) {
 	r.updateRow()
 }
 
+func editorDelFromCursorToEndOfLine() {
+	raw := []byte(goedit.rows[goedit.cursor.y].chars)
+	buf := bytes.NewBuffer(raw[:goedit.cursor.x])
+	buf.WriteByte('\000')
+
+	goedit.rows[goedit.cursor.y].chars = buf.String()
+	goedit.rows[goedit.cursor.y].size = len(buf.String())
+	goedit.rows[goedit.cursor.y].updateRow()
+}
+
 func editorDelRune() {
 	if goedit.cursor.y == goedit.numOfRows {
 		return
@@ -785,6 +795,14 @@ func processKeyPress() {
 			key = END_KEY
 		case '0':
 			key = HOME_KEY
+		case 'D':
+			editorDelFromCursorToEndOfLine()
+			goedit.moveCursor(CURSOR_LEFT)
+		case 'C':
+			editorDelFromCursorToEndOfLine()
+			goedit.mode = INSERT_MODE
+			goedit.editormsg.msg = "-- INSERT --"
+			return
 		}
 	}
 
