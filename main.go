@@ -762,6 +762,17 @@ func editorPrevSearch() {
 	editorPrevSearch()
 }
 
+func editorCommandMode() {
+	result := editorPrompt(":")
+	cmd := strings.Split(result, " ")
+
+	switch cmd[0] {
+	case "q", "quit":
+		resetMode()
+		os.Exit(0)
+	}
+}
+
 func processKeyPress() {
 	key := readKey()
 
@@ -777,7 +788,7 @@ func processKeyPress() {
 			goedit.moveCursor(CURSOR_RIGHT)
 		case ':':
 			goedit.mode = CMD_MODE
-			editorPrompt(":")
+			editorCommandMode()
 			goedit.mode = NORMAL_MODE
 		case '/':
 			goedit.mode = CMD_MODE
@@ -807,9 +818,6 @@ func processKeyPress() {
 	}
 
 	switch key {
-	case ('q' & 0x1f):
-		resetMode()
-		os.Exit(0)
 	case ('s' & 0x1f):
 		goedit.mode = CMD_MODE
 		goedit.save()
