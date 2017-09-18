@@ -382,7 +382,7 @@ func init() {
 
 	goedit.editorUI = bytes.NewBufferString("")
 	goedit.editormsg.fgColor = WHITE
-	goedit.editormsg.bgColor = BLACK + 10
+	goedit.editormsg.bgColor = 49
 }
 
 func openFile(filename string) {
@@ -831,7 +831,7 @@ func processKeyPress() {
 		goedit.mode = NORMAL_MODE
 		goedit.editormsg.msg = ""
 		goedit.editormsg.fgColor = WHITE
-		goedit.editormsg.bgColor = BLACK + 10
+		goedit.editormsg.bgColor = 49
 	case PAGE_UP:
 		goedit.cursor.y = goedit.rowOffSet
 		for x := 0; x < goedit.height; x++ {
