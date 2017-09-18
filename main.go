@@ -152,6 +152,17 @@ func (r *erow) deleteRune(pos int) {
 	r.updateRow()
 }
 
+func editorReplaceRune() {
+	key := readKey()
+	if key < 32 || key > 126 {
+		return
+	}
+
+	goedit.moveCursor(CURSOR_RIGHT)
+	editorDelRune()
+	editorInsertRune(key)
+}
+
 func editorDelFromCursorToEndOfLine() {
 	raw := []byte(goedit.rows[goedit.cursor.y].chars)
 	buf := bytes.NewBuffer(raw[:goedit.cursor.x])
@@ -821,6 +832,8 @@ func processKeyPress() {
 			goedit.mode = INSERT_MODE
 			goedit.editormsg.msg = "-- INSERT --"
 			return
+		case 'r':
+			editorReplaceRune()
 		}
 	}
 
