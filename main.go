@@ -816,6 +816,11 @@ func processKeyPress() {
 			goedit.mode = INSERT_MODE
 			goedit.editormsg.msg = "-- INSERT --"
 			return
+		case 'a':
+			goedit.moveCursor(CURSOR_RIGHT)
+			goedit.mode = INSERT_MODE
+			goedit.editormsg.msg = "-- INSERT --"
+			return
 		}
 	}
 
