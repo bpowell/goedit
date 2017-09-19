@@ -1,0 +1,5 @@
+{
+    "comments": ["//"],
+    "statements": ["var","const","type"],
+    "types": ["int", "float"]
+}
