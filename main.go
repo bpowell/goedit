@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -49,6 +50,18 @@ const (
 	WHITE   = 37
 )
 
+const (
+	HL_COMMENTS   = RED
+	HL_STATEMENTS = YELLOW
+	HL_TYPES      = GREEN
+)
+
+type hl_groups struct {
+	Comments   []string `json:"comments"`
+	Statements []string `josn:"statements"`
+	Types      []string `json:"types"`
+}
+
 type winsize struct {
 	height uint16
 	width  uint16
@@ -57,10 +70,11 @@ type winsize struct {
 }
 
 type erow struct {
-	chars  string
-	render string
-	size   int
-	rsize  int
+	chars     string
+	render    string
+	size      int
+	rsize     int
+	highlight []int
 }
 
 type terminal int
@@ -111,16 +125,19 @@ type editor struct {
 }
 
 func (r *erow) updateRow() {
+	r.highlight = nil
 	buf := bytes.NewBufferString("")
 	raw := []byte(r.chars)
 	rsize := 0
 	for x := 0; x < len(raw); x++ {
 		if raw[x] == '\t' {
 			for i := 0; i < TAB_STOP; i++ {
+				r.highlight = append(r.highlight, WHITE)
 				rsize++
 				buf.WriteByte(' ')
 			}
 		} else {
+			r.highlight = append(r.highlight, WHITE)
 			rsize++
 			buf.WriteByte(raw[x])
 		}
@@ -394,6 +411,20 @@ func init() {
 	goedit.editorUI = bytes.NewBufferString("")
 	goedit.editormsg.fgColor = WHITE
 	goedit.editormsg.bgColor = 49
+
+	syntax, errr := os.Open("go.json")
+	if errr != nil {
+		logger.Println("no syntax file found")
+		return
+	}
+	defer syntax.Close()
+
+	var syn hl_groups
+	decoder := json.NewDecoder(syntax)
+	if errr := decoder.Decode(&syn); errr != nil {
+		logger.Println(errr)
+		return
+	}
 }
 
 func openFile(filename string) {
@@ -461,7 +492,10 @@ func drawRows() {
 			goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%dm", GREEN))
 			goedit.editorUI.WriteString(fmt.Sprintf(formatter, filerow+1))
 			goedit.editorUI.WriteString("\x1b[39;49m")
-			goedit.editorUI.Write(text[goedit.colOffSet:length])
+			for i := goedit.colOffSet; i < length; i++ {
+				goedit.editorUI.WriteString(fmt.Sprintf("\x1b[%dm", goedit.rows[filerow].highlight[i]))
+				goedit.editorUI.WriteByte(text[i])
+			}
 		}
 
 		goedit.editorUI.WriteString("\x1b[K")
