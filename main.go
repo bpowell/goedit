@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"unicode"
 	"unsafe"
 )
 
@@ -132,12 +133,10 @@ func (r *erow) updateRow() {
 	for x := 0; x < len(raw); x++ {
 		if raw[x] == '\t' {
 			for i := 0; i < TAB_STOP; i++ {
-				r.highlight = append(r.highlight, WHITE)
 				rsize++
 				buf.WriteByte(' ')
 			}
 		} else {
-			r.highlight = append(r.highlight, WHITE)
 			rsize++
 			buf.WriteByte(raw[x])
 		}
@@ -145,6 +144,18 @@ func (r *erow) updateRow() {
 	buf.WriteByte('\000')
 	r.rsize = rsize
 	r.render = buf.String()
+	r.updateSyntax()
+}
+
+func (r *erow) updateSyntax() {
+	raw := []byte(r.render)
+	for x := 0; x < r.rsize; x++ {
+		if unicode.IsDigit(rune(raw[x])) && x != 0 && !unicode.IsLetter(rune(raw[x-1])) {
+			r.highlight = append(r.highlight, MAGENTA)
+		} else {
+			r.highlight = append(r.highlight, WHITE)
+		}
+	}
 }
 
 func (r *erow) deleteRune(pos int) {
