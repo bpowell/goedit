@@ -8,6 +8,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"unicode"
@@ -422,20 +423,6 @@ func init() {
 	goedit.editorUI = bytes.NewBufferString("")
 	goedit.editormsg.fgColor = WHITE
 	goedit.editormsg.bgColor = 49
-
-	syntax, errr := os.Open("go.json")
-	if errr != nil {
-		logger.Println("no syntax file found")
-		return
-	}
-	defer syntax.Close()
-
-	var syn hl_groups
-	decoder := json.NewDecoder(syntax)
-	if errr := decoder.Decode(&syn); errr != nil {
-		logger.Println(errr)
-		return
-	}
 }
 
 func openFile(filename string) {
@@ -454,6 +441,31 @@ func openFile(filename string) {
 
 	goedit.numOfRows = len(goedit.rows)
 	goedit.filename = filename
+	selectSyntax(filename)
+}
+
+func selectSyntax(filename string) {
+	var syntaxFile string
+	switch filepath.Ext(filename) {
+	case ".go":
+		syntaxFile = "go.json"
+	default:
+		return
+	}
+
+	syntax, errr := os.Open(syntaxFile)
+	if errr != nil {
+		logger.Println("no syntax file found")
+		return
+	}
+	defer syntax.Close()
+
+	var syn hl_groups
+	decoder := json.NewDecoder(syntax)
+	if errr := decoder.Decode(&syn); errr != nil {
+		logger.Println(errr)
+		return
+	}
 }
 
 func drawStatusBar() {
@@ -690,6 +702,7 @@ func (e *editor) rowsToString() string {
 func (e *editor) save() {
 	if e.filename == "" {
 		e.filename = editorPrompt("Save as ")
+		syntaxFile(e.filename)
 	}
 
 	file, err := os.OpenFile(e.filename, os.O_RDWR|os.O_CREATE, 0644)
