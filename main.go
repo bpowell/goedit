@@ -702,7 +702,7 @@ func (e *editor) rowsToString() string {
 func (e *editor) save() {
 	if e.filename == "" {
 		e.filename = editorPrompt("Save as ")
-		syntaxFile(e.filename)
+		selectSyntax(e.filename)
 	}
 
 	file, err := os.OpenFile(e.filename, os.O_RDWR|os.O_CREATE, 0644)
