@@ -124,6 +124,7 @@ type editor struct {
 	editormsg     editorMsgBar
 	lineNumOffSet int
 	search        searchObject
+	modifiyed     bool
 }
 
 func (r *erow) updateRow() {
@@ -190,6 +191,7 @@ func editorReplaceRune() {
 	goedit.moveCursor(CURSOR_RIGHT)
 	editorDelRune()
 	editorInsertRune(key)
+	goedit.modifiyed = true
 }
 
 func editorDelFromCursorToEndOfLine() {
@@ -200,6 +202,7 @@ func editorDelFromCursorToEndOfLine() {
 	goedit.rows[goedit.cursor.y].chars = buf.String()
 	goedit.rows[goedit.cursor.y].size = len(buf.String())
 	goedit.rows[goedit.cursor.y].updateRow()
+	goedit.modifiyed = true
 }
 
 func editorDelRune() {
@@ -220,6 +223,7 @@ func editorDelRune() {
 		editorDelRow(goedit.cursor.y)
 		goedit.cursor.y--
 	}
+	goedit.modifiyed = true
 }
 
 func editorDelRow(pos int) {
@@ -229,6 +233,7 @@ func editorDelRow(pos int) {
 
 	goedit.rows = append(goedit.rows[:pos], goedit.rows[pos+1:]...)
 	goedit.numOfRows--
+	goedit.modifiyed = true
 }
 
 func (r *erow) appendRow(chars string) {
@@ -269,6 +274,7 @@ func editorInsertRune(c rune) {
 
 	goedit.rows[goedit.cursor.y].insertRune(c, goedit.cursor.x)
 	goedit.cursor.x++
+	goedit.modifiyed = true
 }
 
 func (e *editor) insertRow(pos int, r string) {
@@ -313,6 +319,7 @@ func editorInsertNewline() {
 
 	goedit.cursor.x = 0
 	goedit.cursor.y++
+	goedit.modifiyed = true
 }
 
 func editorPrompt(msg string) string {
@@ -320,6 +327,8 @@ func editorPrompt(msg string) string {
 	buf := bytes.NewBufferString("")
 	msgLength := len(msg)
 	goedit.cursor.x = msgLength
+	goedit.editormsg.fgColor = WHITE
+	goedit.editormsg.bgColor = 49
 
 	for {
 		goedit.editormsg.msg = fmt.Sprintf("%s%s", msg, buf)
@@ -726,6 +735,7 @@ func (e *editor) save() {
 	}
 
 	e.editormsg.msg = fmt.Sprintf("\"%s\" %dL %d bytess written to disk", e.filename, e.numOfRows, n)
+	goedit.modifiyed = false
 }
 
 func clearScreen() {
@@ -831,14 +841,27 @@ func editorPrevSearch() {
 	editorPrevSearch()
 }
 
+func editorQuit(force bool) {
+	if goedit.modifiyed == true && force == false {
+		goedit.editormsg.msg = "No write since last change (add ! to override)"
+		goedit.editormsg.fgColor = WHITE
+		goedit.editormsg.bgColor = BLUE + 10
+		return
+	}
+
+	resetMode()
+	os.Exit(0)
+}
+
 func editorCommandMode() {
 	result := editorPrompt(":")
 	cmd := strings.Split(result, " ")
 
 	switch cmd[0] {
 	case "q", "quit":
-		resetMode()
-		os.Exit(0)
+		editorQuit(false)
+	case "q!", "quit!":
+		editorQuit(true)
 	case "w", "write":
 		goedit.save()
 	case "wq":
