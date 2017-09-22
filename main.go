@@ -853,6 +853,27 @@ func editorQuit(force bool) {
 	os.Exit(0)
 }
 
+func editorFindInRow(direction rune) {
+	key := readKey()
+	if key < 32 || key > 126 {
+		return
+	}
+
+	var text string
+	if direction == 'f' {
+		text = string(goedit.rows[goedit.cursor.y].chars[goedit.cursor.x:])
+	} else if direction == 'F' {
+		text = string(goedit.rows[goedit.cursor.y].chars[:goedit.cursor.x])
+	}
+
+	indx := strings.IndexRune(text, key)
+	if indx == -1 {
+		return
+	}
+
+	goedit.cursor.x = indx
+}
+
 func editorCommandMode() {
 	result := editorPrompt(":")
 	cmd := strings.Split(result, " ")
@@ -922,6 +943,8 @@ func processKeyPress() {
 		case 'x':
 			goedit.moveCursor(CURSOR_RIGHT)
 			editorDelRune()
+		case 'f', 'F':
+			editorFindInRow(key)
 		}
 	}
 
