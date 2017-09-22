@@ -841,6 +841,10 @@ func editorCommandMode() {
 		os.Exit(0)
 	case "w", "write":
 		goedit.save()
+	case "wq":
+		goedit.save()
+		resetMode()
+		os.Exit(0)
 	}
 }
 
