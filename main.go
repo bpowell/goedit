@@ -919,6 +919,9 @@ func processKeyPress() {
 			return
 		case 'r':
 			editorReplaceRune()
+		case 'x':
+			goedit.moveCursor(CURSOR_RIGHT)
+			editorDelRune()
 		}
 	}
 
