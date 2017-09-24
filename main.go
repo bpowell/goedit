@@ -945,6 +945,11 @@ func processKeyPress() {
 			editorDelRune()
 		case 'f', 'F':
 			editorFindInRow(key)
+		case 'O':
+			goedit.insertRow(goedit.cursor.y, "")
+			goedit.mode = INSERT_MODE
+			goedit.editormsg.msg = "-- INSERT --"
+			return
 		}
 	}
 
