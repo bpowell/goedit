@@ -58,6 +58,11 @@ const (
 	HL_TYPES      = GREEN
 )
 
+const (
+	FORWARD  = 1
+	BACKWARD = 2
+)
+
 type hl_groups struct {
 	Comments   []string `json:"comments"`
 	Statements []string `josn:"statements"`
@@ -853,16 +858,16 @@ func editorQuit(force bool) {
 	os.Exit(0)
 }
 
-func editorFindInRow(direction rune) {
+func editorFindInRow(direction int, modifier int) {
 	key := readKey()
 	if key < 32 || key > 126 {
 		return
 	}
 
 	var text string
-	if direction == 'f' {
+	if direction == FORWARD {
 		text = string(goedit.rows[goedit.cursor.y].chars[goedit.cursor.x:])
-	} else if direction == 'F' {
+	} else if direction == BACKWARD {
 		text = string(goedit.rows[goedit.cursor.y].chars[:goedit.cursor.x])
 	}
 
@@ -871,7 +876,7 @@ func editorFindInRow(direction rune) {
 		return
 	}
 
-	goedit.cursor.x = indx
+	goedit.cursor.x = indx + modifier
 }
 
 func editorCommandMode() {
@@ -943,8 +948,14 @@ func processKeyPress() {
 		case 'x':
 			goedit.moveCursor(CURSOR_RIGHT)
 			editorDelRune()
-		case 'f', 'F':
-			editorFindInRow(key)
+		case 't':
+			editorFindInRow(FORWARD, -1)
+		case 'T':
+			editorFindInRow(BACKWARD, 1)
+		case 'f':
+			editorFindInRow(FORWARD, 0)
+		case 'F':
+			editorFindInRow(BACKWARD, 0)
 		case 'O':
 			goedit.insertRow(goedit.cursor.y, "")
 			goedit.mode = INSERT_MODE
