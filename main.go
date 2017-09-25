@@ -865,10 +865,13 @@ func editorFindInRow(direction int, modifier int) {
 	}
 
 	var text string
+	var cursorx int
 	if direction == FORWARD {
 		text = string(goedit.rows[goedit.cursor.y].chars[goedit.cursor.x:])
+		cursorx = goedit.cursor.x
 	} else if direction == BACKWARD {
 		text = string(goedit.rows[goedit.cursor.y].chars[:goedit.cursor.x])
+		cursorx = 0
 	}
 
 	indx := strings.IndexRune(text, key)
@@ -876,7 +879,7 @@ func editorFindInRow(direction int, modifier int) {
 		return
 	}
 
-	goedit.cursor.x = indx + modifier
+	goedit.cursor.x = indx + modifier + cursorx
 }
 
 func editorCommandMode() {
