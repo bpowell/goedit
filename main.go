@@ -1007,6 +1007,8 @@ func processKeyPress() {
 	case '\r':
 		if goedit.mode == INSERT_MODE {
 			editorInsertNewline()
+		} else if goedit.mode == NORMAL_MODE {
+			goedit.moveCursor(CURSOR_DOWN)
 		}
 	default:
 		if goedit.mode == INSERT_MODE {
