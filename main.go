@@ -422,8 +422,7 @@ func init() {
 	goedit.mode = NORMAL_MODE
 
 	goedit.reader = terminal(syscall.Stdin)
-	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), syscall.TCGETS, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
-	if err != 0 {
+	if err := goedit.getShellNormal(); err != 0 {
 		logger.Fatal(err)
 	}
 
