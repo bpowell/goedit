@@ -573,15 +573,7 @@ func rawMode() {
 	argp.Cc[syscall.VMIN] = 0
 	argp.Cc[syscall.VTIME] = 1
 
-	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), 0x5404, uintptr(unsafe.Pointer(&argp)), 0, 0, 0)
-	if err != 0 {
-		logger.Fatal(err)
-	}
-}
-
-func resetMode() {
-	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(goedit.reader), 0x5404, uintptr(unsafe.Pointer(&goedit.orignial)), 0, 0, 0)
-	if err != 0 {
+	if err := goedit.rawMode(argp); err != 0 {
 		logger.Fatal(err)
 	}
 }
@@ -853,7 +845,7 @@ func editorQuit(force bool) {
 		return
 	}
 
-	resetMode()
+	goedit.resetMode()
 	os.Exit(0)
 }
 
@@ -894,7 +886,7 @@ func editorCommandMode() {
 		goedit.save()
 	case "wq":
 		goedit.save()
-		resetMode()
+		goedit.resetMode()
 		os.Exit(0)
 	}
 }
