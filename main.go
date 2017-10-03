@@ -778,10 +778,11 @@ func editorNextSearch() {
 
 	if goedit.search.location.x+1 < goedit.rows[goedit.search.location.y].rsize {
 		raw := []byte(goedit.rows[goedit.search.location.y].render)
-		indx := strings.Index(string(raw[goedit.search.location.x+1:]), goedit.search.query)
+		loc := cursorxToRx(goedit.rows[goedit.search.location.y], goedit.search.location.x+1)
+		indx := strings.Index(string(raw[loc:]), goedit.search.query)
 		if indx != -1 {
 			goedit.cursor.x = cursorxToCx(goedit.rows[goedit.search.location.y], indx)
-			goedit.search.location.x = indx
+			goedit.search.location.x = loc
 			return
 		}
 	}
