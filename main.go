@@ -570,8 +570,8 @@ func rawMode() {
 	argp.Oflag &^= syscall.OPOST
 	argp.Cflag |= syscall.CS8
 	argp.Lflag &^= syscall.ECHO | syscall.ICANON | syscall.ISIG
-	argp.Cc[syscall.VMIN] = 0
-	argp.Cc[syscall.VTIME] = 1
+	argp.Cc[syscall.VMIN] = 1
+	argp.Cc[syscall.VTIME] = 0
 
 	if err := goedit.rawMode(argp); err != 0 {
 		logger.Fatal(err)
