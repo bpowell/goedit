@@ -14,3 +14,6 @@ http://viewsourcecode.org/snaptoken/kilo/ tutorial on how to make text editor in
 
 ## Basic VIM bindings:
 `t,T`, `f,F`, `h,j,k,l`, `$,0`, `:,/`, `n,N`, `D,C,a,i,O`, `x,r`
+
+## How to build
+`go build`
