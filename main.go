@@ -17,6 +17,7 @@ import (
 
 var errorlog *os.File
 var logger *log.Logger
+var previousCommand rune
 
 const (
 	TAB_STOP = 4
@@ -892,71 +893,89 @@ func editorCommandMode() {
 	}
 }
 
+func getNormalModeCommand(key rune) {
+	switch key {
+	case 'h':
+		goedit.moveCursor(CURSOR_LEFT)
+	case 'j':
+		goedit.moveCursor(CURSOR_DOWN)
+	case 'k':
+		goedit.moveCursor(CURSOR_UP)
+	case 'l':
+		goedit.moveCursor(CURSOR_RIGHT)
+	case ':':
+		goedit.mode = CMD_MODE
+		editorCommandMode()
+		goedit.mode = NORMAL_MODE
+	case '/':
+		goedit.mode = CMD_MODE
+		editorSearch()
+		goedit.mode = NORMAL_MODE
+	case 'i':
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		return
+	case 'n':
+		editorNextSearch()
+		previousCommand = key
+	case 'N':
+		editorPrevSearch()
+		previousCommand = key
+	case '$':
+		key = END_KEY
+	case '0':
+		key = HOME_KEY
+	case 'D':
+		editorDelFromCursorToEndOfLine()
+		goedit.moveCursor(CURSOR_LEFT)
+		previousCommand = key
+	case 'C':
+		editorDelFromCursorToEndOfLine()
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		previousCommand = key
+		return
+	case 'a':
+		goedit.moveCursor(CURSOR_RIGHT)
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		return
+	case 'r':
+		editorReplaceRune()
+		previousCommand = key
+	case 'x':
+		goedit.moveCursor(CURSOR_RIGHT)
+		editorDelRune()
+		previousCommand = key
+	case 't':
+		editorFindInRow(FORWARD, -1)
+	case 'T':
+		editorFindInRow(BACKWARD, 1)
+	case 'f':
+		editorFindInRow(FORWARD, 0)
+	case 'F':
+		editorFindInRow(BACKWARD, 0)
+	case 'O':
+		goedit.insertRow(goedit.cursor.y, "")
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		return
+	case 's':
+		goedit.moveCursor(CURSOR_RIGHT)
+		editorDelRune()
+		goedit.mode = INSERT_MODE
+		previousCommand = key
+		return
+	case '.':
+		getNormalModeCommand(previousCommand)
+	}
+}
+
 func processKeyPress() {
 	key := readKey()
 
 	if goedit.mode == NORMAL_MODE {
-		switch key {
-		case 'h':
-			goedit.moveCursor(CURSOR_LEFT)
-		case 'j':
-			goedit.moveCursor(CURSOR_DOWN)
-		case 'k':
-			goedit.moveCursor(CURSOR_UP)
-		case 'l':
-			goedit.moveCursor(CURSOR_RIGHT)
-		case ':':
-			goedit.mode = CMD_MODE
-			editorCommandMode()
-			goedit.mode = NORMAL_MODE
-		case '/':
-			goedit.mode = CMD_MODE
-			editorSearch()
-			goedit.mode = NORMAL_MODE
-		case 'i':
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		case 'n':
-			editorNextSearch()
-		case 'N':
-			editorPrevSearch()
-		case '$':
-			key = END_KEY
-		case '0':
-			key = HOME_KEY
-		case 'D':
-			editorDelFromCursorToEndOfLine()
-			goedit.moveCursor(CURSOR_LEFT)
-		case 'C':
-			editorDelFromCursorToEndOfLine()
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		case 'a':
-			goedit.moveCursor(CURSOR_RIGHT)
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		case 'r':
-			editorReplaceRune()
-		case 'x':
-			goedit.moveCursor(CURSOR_RIGHT)
-			editorDelRune()
-		case 't':
-			editorFindInRow(FORWARD, -1)
-		case 'T':
-			editorFindInRow(BACKWARD, 1)
-		case 'f':
-			editorFindInRow(FORWARD, 0)
-		case 'F':
-			editorFindInRow(BACKWARD, 0)
-		case 'O':
-			goedit.insertRow(goedit.cursor.y, "")
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		}
+		getNormalModeCommand(key)
 	}
 
 	switch key {
