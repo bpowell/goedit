@@ -889,6 +889,10 @@ func editorCommandMode() {
 		goedit.save()
 		goedit.resetMode()
 		os.Exit(0)
+	case "o", "open":
+		if len(cmd) == 2 {
+			openFile(cmd[1])
+		}
 	}
 }
 
