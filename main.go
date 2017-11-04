@@ -410,14 +410,7 @@ func cursorxToCx(row erow, rx int) int {
 
 var goedit editor
 
-func init() {
-	errorlog, errr := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if errr != nil {
-		logger.Fatal(errr)
-	}
-
-	logger = log.New(errorlog, "goedit: ", log.Lshortfile|log.LstdFlags)
-
+func initEditor() {
 	goedit = editor{}
 	goedit.mode = NORMAL_MODE
 
@@ -438,12 +431,23 @@ func init() {
 	goedit.editormsg.bgColor = 49
 }
 
+func init() {
+	errorlog, errr := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if errr != nil {
+		logger.Fatal(errr)
+	}
+
+	logger = log.New(errorlog, "goedit: ", log.Lshortfile|log.LstdFlags)
+    initEditor()
+}
+
 func openFile(filename string) {
 	file, err := os.Open(filename)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	defer file.Close()
+    initEditor()
 
 	line := 0
 	scanner := bufio.NewScanner(file)
