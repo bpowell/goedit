@@ -446,6 +446,7 @@ func openFile(filename string) {
 	defer file.Close()
 
 	line := 0
+	goedit.rows = []erow{}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		goedit.insertRow(line, scanner.Text())
@@ -889,6 +890,10 @@ func editorCommandMode() {
 		goedit.save()
 		goedit.resetMode()
 		os.Exit(0)
+	case "o", "open":
+		if len(cmd) == 2 {
+			openFile(cmd[1])
+		}
 	}
 }
 
