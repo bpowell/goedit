@@ -986,6 +986,7 @@ func getNormalModeCommand(key rune, clear bool) bool {
 		goedit.moveCursor(CURSOR_RIGHT)
 		editorDelRune()
 		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
 		prevCommand = key
 		return false
 	case '.':
