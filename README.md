@@ -3,10 +3,10 @@
 My attempt to make a text editor in Go for the Go programming language.
 
 ## Features
-- [] Syntax highlighting for Go
+- [ ] Syntax highlighting for Go
 - [x] Save file that is being edited
 - [x] BASIC vim like keybindings
-- [] Run Go code from the editor
+- [ ] Run Go code from the editor
 - [x] Line numbers
 
 ## Inspiration
