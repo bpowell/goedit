@@ -17,6 +17,8 @@ import (
 
 var errorlog *os.File
 var logger *log.Logger
+var prevCommand rune
+var prevCharacters []rune
 
 const (
 	TAB_STOP = 4
@@ -897,119 +899,182 @@ func editorCommandMode() {
 	}
 }
 
-func processKeyPress() {
-	key := readKey()
-
-	if goedit.mode == NORMAL_MODE {
-		switch key {
-		case 'h':
-			goedit.moveCursor(CURSOR_LEFT)
-		case 'j':
-			goedit.moveCursor(CURSOR_DOWN)
-		case 'k':
-			goedit.moveCursor(CURSOR_UP)
-		case 'l':
-			goedit.moveCursor(CURSOR_RIGHT)
-		case ':':
-			goedit.mode = CMD_MODE
-			editorCommandMode()
-			goedit.mode = NORMAL_MODE
-		case '/':
-			goedit.mode = CMD_MODE
-			editorSearch()
-			goedit.mode = NORMAL_MODE
-		case 'i':
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		case 'n':
-			editorNextSearch()
-		case 'N':
-			editorPrevSearch()
-		case '$':
-			key = END_KEY
-		case '0':
-			key = HOME_KEY
-		case 'D':
-			editorDelFromCursorToEndOfLine()
-			goedit.moveCursor(CURSOR_LEFT)
-		case 'C':
-			editorDelFromCursorToEndOfLine()
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		case 'a':
-			goedit.moveCursor(CURSOR_RIGHT)
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		case 'r':
-			editorReplaceRune()
-		case 'x':
-			goedit.moveCursor(CURSOR_RIGHT)
-			editorDelRune()
-		case 't':
-			editorFindInRow(FORWARD, -1)
-		case 'T':
-			editorFindInRow(BACKWARD, 1)
-		case 'f':
-			editorFindInRow(FORWARD, 0)
-		case 'F':
-			editorFindInRow(BACKWARD, 0)
-		case 'O':
-			goedit.insertRow(goedit.cursor.y, "")
-			goedit.mode = INSERT_MODE
-			goedit.editormsg.msg = "-- INSERT --"
-			return
-		}
-	}
-
+func getNormalModeCommand(key rune, clear bool) bool {
 	switch key {
-	case CURSOR_DOWN, CURSOR_UP, CURSOR_LEFT, CURSOR_RIGHT:
-		goedit.moveCursor(key)
-	case '\x1b':
+	case 'h':
+		goedit.moveCursor(CURSOR_LEFT)
+	case 'j':
+		goedit.moveCursor(CURSOR_DOWN)
+	case 'k':
+		goedit.moveCursor(CURSOR_UP)
+	case 'l':
+		goedit.moveCursor(CURSOR_RIGHT)
+	case ':':
+		goedit.mode = CMD_MODE
+		editorCommandMode()
+		goedit.mode = NORMAL_MODE
+	case '/':
+		goedit.mode = CMD_MODE
+		editorSearch()
+		goedit.mode = NORMAL_MODE
+	case 'i':
+		if clear {
+			prevCharacters = prevCharacters[:0]
+			prevCommand = key
+		}
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		prevCommand = key
+
+		return false
+	case 'n':
+		editorNextSearch()
+		prevCommand = key
+	case 'N':
+		editorPrevSearch()
+		prevCommand = key
+	case '$':
+		if goedit.cursor.y < goedit.numOfRows {
+			goedit.cursor.x = goedit.rows[goedit.cursor.y].size
+		}
+	case '0':
+		goedit.cursor.x = 0
+	case 'D':
+		editorDelFromCursorToEndOfLine()
+		goedit.moveCursor(CURSOR_LEFT)
+		prevCommand = key
+	case 'C':
+		editorDelFromCursorToEndOfLine()
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		prevCommand = key
+
+		return false
+	case 'a':
+		if clear {
+			prevCharacters = prevCharacters[:0]
+			prevCommand = key
+		}
+		goedit.moveCursor(CURSOR_RIGHT)
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+
+		return false
+	case 'r':
+		editorReplaceRune()
+		prevCommand = key
+	case 'x':
+		goedit.moveCursor(CURSOR_RIGHT)
+		editorDelRune()
+		prevCommand = key
+	case 't':
+		editorFindInRow(FORWARD, -1)
+	case 'T':
+		editorFindInRow(BACKWARD, 1)
+	case 'f':
+		editorFindInRow(FORWARD, 0)
+	case 'F':
+		editorFindInRow(BACKWARD, 0)
+	case 'O':
+		if clear {
+			prevCharacters = prevCharacters[:0]
+		}
+		goedit.insertRow(goedit.cursor.y, "")
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		prevCommand = key
+		return false
+	case 's':
+		if clear {
+			prevCharacters = prevCharacters[:0]
+		}
+		goedit.moveCursor(CURSOR_RIGHT)
+		editorDelRune()
+		goedit.mode = INSERT_MODE
+		goedit.editormsg.msg = "-- INSERT --"
+		prevCommand = key
+		return false
+	case '.':
+		switch prevCommand {
+		case 'i', 'a', 's', 'o', 'O':
+			if len(prevCharacters) > 0 {
+				characters := prevCharacters
+				getNormalModeCommand(prevCommand, false)
+
+				for _, char := range characters {
+					editorInsertRune(char)
+				}
+			}
+		default:
+			getNormalModeCommand(prevCommand, false)
+		}
+
 		goedit.mode = NORMAL_MODE
 		goedit.editormsg.msg = ""
 		goedit.editormsg.fgColor = WHITE
 		goedit.editormsg.bgColor = 49
-	case PAGE_UP:
-		goedit.cursor.y = goedit.rowOffSet
-		for x := 0; x < goedit.height; x++ {
-			goedit.moveCursor(CURSOR_UP)
-		}
-	case PAGE_DOWN:
-		goedit.cursor.y = goedit.rowOffSet + goedit.height - 1
-		if goedit.cursor.y > goedit.numOfRows {
-			goedit.cursor.y = goedit.numOfRows
-		}
-		for x := 0; x < goedit.height; x++ {
-			goedit.moveCursor(CURSOR_DOWN)
-		}
-	case HOME_KEY:
-		goedit.cursor.x = 0
-	case END_KEY:
-		if goedit.cursor.y < goedit.numOfRows {
-			goedit.cursor.x = goedit.rows[goedit.cursor.y].size
-		}
-	case BACKSPACE:
-		if goedit.mode == NORMAL_MODE {
-			return
-		}
-		editorDelRune()
-	case DEL_KEY:
-		if key == DEL_KEY {
-			goedit.moveCursor(CURSOR_RIGHT)
-		}
-		editorDelRune()
-	case '\r':
-		if goedit.mode == INSERT_MODE {
-			editorInsertNewline()
-		} else if goedit.mode == NORMAL_MODE {
-			goedit.moveCursor(CURSOR_DOWN)
-		}
-	default:
-		if goedit.mode == INSERT_MODE {
-			editorInsertRune(key)
+	}
+
+	return true
+}
+
+func processKeyPress() {
+	key := readKey()
+	com := true
+
+	if goedit.mode == NORMAL_MODE {
+		com = getNormalModeCommand(key, true)
+	}
+
+	if com {
+		switch key {
+		case CURSOR_DOWN, CURSOR_UP, CURSOR_LEFT, CURSOR_RIGHT:
+			goedit.moveCursor(key)
+		case '\x1b':
+			goedit.mode = NORMAL_MODE
+			goedit.editormsg.msg = ""
+			goedit.editormsg.fgColor = WHITE
+			goedit.editormsg.bgColor = 49
+		case PAGE_UP:
+			goedit.cursor.y = goedit.rowOffSet
+			for x := 0; x < goedit.height; x++ {
+				goedit.moveCursor(CURSOR_UP)
+			}
+		case PAGE_DOWN:
+			goedit.cursor.y = goedit.rowOffSet + goedit.height - 1
+			if goedit.cursor.y > goedit.numOfRows {
+				goedit.cursor.y = goedit.numOfRows
+			}
+			for x := 0; x < goedit.height; x++ {
+				goedit.moveCursor(CURSOR_DOWN)
+			}
+		case HOME_KEY:
+			goedit.cursor.x = 0
+		case END_KEY:
+			if goedit.cursor.y < goedit.numOfRows {
+				goedit.cursor.x = goedit.rows[goedit.cursor.y].size
+			}
+		case BACKSPACE:
+			if goedit.mode == NORMAL_MODE {
+				return
+			}
+			editorDelRune()
+		case DEL_KEY:
+			if key == DEL_KEY {
+				goedit.moveCursor(CURSOR_RIGHT)
+			}
+			editorDelRune()
+		case '\r':
+			if goedit.mode == INSERT_MODE {
+				editorInsertNewline()
+			} else if goedit.mode == NORMAL_MODE {
+				goedit.moveCursor(CURSOR_DOWN)
+			}
+		default:
+			if goedit.mode == INSERT_MODE {
+				editorInsertRune(key)
+				prevCharacters = append(prevCharacters, key)
+			}
 		}
 	}
 }
